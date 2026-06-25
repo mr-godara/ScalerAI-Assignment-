@@ -10,16 +10,9 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: authApi.login,
-    onSuccess: async (data) => {
-      // Temporarily set token so getMe can use it
-      useAuthStore.setState({ token: data.access_token, isAuthenticated: true });
-      try {
-        const user = await authApi.getMe();
-        setAuth(user, data.access_token);
-        router.push("/hosted-zones");
-      } catch (err) {
-        useAuthStore.getState().clearAuth();
-      }
+    onSuccess: (data) => {
+      setAuth(data.user as any, data.access_token);
+      router.push("/hosted-zones");
     },
   });
 };

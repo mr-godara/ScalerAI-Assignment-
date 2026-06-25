@@ -28,11 +28,9 @@ export default function LoginPage() {
   });
 
   const onSubmit = (data: LoginFormValues) => {
-    const params = new URLSearchParams();
-    params.append("username", data.email);
-    params.append("password", data.password);
-
-    loginMutation.mutate(params, {
+    loginMutation.mutate(
+      { email: data.email, password: data.password },
+      {
       onError: () => {
         toast.error("Invalid email or password");
       },
