@@ -16,7 +16,7 @@ import { RecordsTable } from "@/components/dns-records/records-table";
 import { RecordModal } from "@/components/dns-records/record-modal";
 import { ImportModal } from "@/components/dns-records/import-modal";
 import { BulkEditModal } from "@/components/dns-records/bulk-edit-modal";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -310,19 +310,25 @@ export default function ZoneDetailPage({
                 <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>Import zone file</Button>
                 
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline">Export</Button>
+                  <DropdownMenuTrigger className={buttonVariants({ variant: "outline" })}>
+                    Export <ChevronDown className="ml-2 h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "json", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[])} download>
-                        Export as JSON
-                      </a>
+                    <DropdownMenuItem onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = dnsRecordsApi.exportZoneFileUrl(zoneId, "json", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[]);
+                      link.download = '';
+                      link.click();
+                    }}>
+                      Export as JSON
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "bind", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[])} download>
-                        Export as BIND zone file
-                      </a>
+                    <DropdownMenuItem onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = dnsRecordsApi.exportZoneFileUrl(zoneId, "bind", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[]);
+                      link.download = '';
+                      link.click();
+                    }}>
+                      Export as BIND zone file
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

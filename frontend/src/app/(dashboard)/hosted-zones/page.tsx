@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useZones, useDeleteZone } from "@/lib/hooks/use-hosted-zones";
 import { ZoneTable } from "@/components/hosted-zones/zone-table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -97,9 +97,9 @@ export default function HostedZonesPage() {
           <Button variant="outline" disabled>
             Import zone
           </Button>
-          <Button asChild className="bg-orange-600 hover:bg-orange-700 text-white">
-            <Link href="/hosted-zones/new">Create hosted zone</Link>
-          </Button>
+          <Link href="/hosted-zones/new" className={buttonVariants({ className: "bg-orange-600 hover:bg-orange-700 text-white" })}>
+            Create hosted zone
+          </Link>
         </div>
       </div>
 

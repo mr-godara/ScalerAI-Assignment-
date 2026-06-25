@@ -12,6 +12,8 @@ export const useLogin = () => {
     mutationFn: authApi.login,
     onSuccess: (data) => {
       setAuth(data.user as any, data.access_token);
+      // Set cookie for middleware
+      document.cookie = `auth-token=${data.access_token}; path=/; max-age=86400; samesite=lax`;
       router.push("/hosted-zones");
     },
   });
@@ -27,6 +29,8 @@ export const useLogout = () => {
     onSuccess: () => {
       clearAuth();
       queryClient.clear();
+      // Clear cookie for middleware
+      document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       router.push("/login");
     },
   });

@@ -9,7 +9,7 @@ import { HostedZone } from "@/types/api";
 import { DataTable } from "@/components/common/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Eye, Trash2, ArrowUpDown, Globe } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/common/status-badge";
@@ -165,17 +165,13 @@ export function ZoneTable({
         const zone = row.original;
         return (
           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon"
-              asChild
-              className="h-8 w-8 text-gray-500 hover:text-blue-600"
+            <Link 
+              href={`/hosted-zones/${zone.id}`}
+              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8 text-gray-500 hover:text-blue-600" })}
             >
-              <Link href={`/hosted-zones/${zone.id}`}>
-                <Eye className="h-4 w-4" />
-                <span className="sr-only">View details</span>
-              </Link>
-            </Button>
+              <Eye className="h-4 w-4" />
+              <span className="sr-only">View details</span>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
