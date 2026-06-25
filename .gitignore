@@ -21,3 +21,11 @@ Thumbs.db
 # IDEs
 .idea/
 .vscode/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Scripts
+*.ps1
