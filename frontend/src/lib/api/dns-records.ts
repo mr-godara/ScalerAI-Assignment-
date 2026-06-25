@@ -1,9 +1,9 @@
 import { api } from "./client";
-import { DNSRecord, PaginatedResponse, RecordListParams } from "@/types/api";
+import { DNSRecord, RecordListResponse, RecordListParams } from "@/types/api";
 
 export const dnsRecordsApi = {
   getRecords: (zoneId: string, params?: RecordListParams) => {
-    return api.get<PaginatedResponse<DNSRecord>>(`/hosted-zones/${zoneId}/records`, { params });
+    return api.get<RecordListResponse>(`/hosted-zones/${zoneId}/records`, { params });
   },
   createRecord: (zoneId: string, data: Partial<DNSRecord>) => {
     return api.post<DNSRecord>(`/hosted-zones/${zoneId}/records`, data);

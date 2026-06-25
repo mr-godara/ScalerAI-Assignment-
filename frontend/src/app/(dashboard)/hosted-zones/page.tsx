@@ -1,41 +1,233 @@
 "use client";
 
-import { useZones } from "@/lib/hooks/use-hosted-zones";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useZones, useDeleteZone } from "@/lib/hooks/use-hosted-zones";
 import { ZoneTable } from "@/components/hosted-zones/zone-table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
 
 export default function HostedZonesPage() {
-  const { data, isLoading, error } = useZones();
-  const zones = data?.items || [];
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("any");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset to page 1 on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when type filter changes
+  const handleTypeChange = (value: string) => {
+    setTypeFilter(value);
+    setPage(1);
+  };
+
+  const { data, isLoading, refetch } = useZones({
+    page,
+    page_size: pageSize,
+    search: debouncedSearch || undefined,
+    type: typeFilter !== "any" ? typeFilter : undefined,
+  });
+
+  const deleteZoneMutation = useDeleteZone();
+  
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [zonesToDelete, setZonesToDelete] = useState<string[]>([]);
+
+  const handleDeleteSingle = (id: string) => {
+    setZonesToDelete([id]);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteSelected = (ids: string[]) => {
+    setZonesToDelete(ids);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      // If backend doesn't support bulk delete, we do it one by one
+      // The API interface has deleteZone. If we want to delete multiple,
+      // we might need to loop or call a bulk delete if it existed.
+      // Since hostedZonesApi only has deleteZone, we will map over them.
+      await Promise.all(zonesToDelete.map((id) => deleteZoneMutation.mutateAsync(id)));
+      
+      toast.success(
+        zonesToDelete.length > 1
+          ? "Hosted zones deleted successfully"
+          : "Hosted zone deleted successfully"
+      );
+      setDeleteModalOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete hosted zone(s)");
+    }
+  };
+
+  const totalItems = data?.total || 0;
+  const totalPages = data?.total_pages || 1;
+  const startItem = (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalItems);
 
   return (
-    <div className="p-0">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-aws-text">Hosted zones</h1>
-        <Link
-          href="/hosted-zones/new"
-          className="bg-aws-orange hover:bg-aws-orange-dark text-aws-text font-medium py-1.5 px-4 rounded text-sm transition-colors"
-        >
-          Create hosted zone
-        </Link>
+    <div className="p-8 max-w-[1600px] mx-auto space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Hosted zones
+        </h1>
+        <div className="flex gap-3">
+          <Button variant="outline" disabled>
+            Import zone
+          </Button>
+          <Button asChild className="bg-orange-600 hover:bg-orange-700 text-white">
+            <Link href="/hosted-zones/new">Create hosted zone</Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="bg-aws-white border border-aws-border rounded shadow-sm">
-        <div className="p-4 border-b border-aws-border bg-aws-bg flex justify-between items-center">
-          <h2 className="text-lg font-medium text-aws-text">Hosted zones</h2>
+      <div className="bg-white rounded-md shadow-sm border border-slate-200">
+        {/* Toolbar */}
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative max-w-sm flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search hosted zones by name"
+                className="pl-9 h-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="w-[180px]">
+              <Select value={typeFilter} onValueChange={handleTypeChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any type</SelectItem>
+                  <SelectItem value="PUBLIC">Public</SelectItem>
+                  <SelectItem value="PRIVATE">Private</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="text-sm text-slate-500 font-medium">
+            {totalItems === 1 ? "1 hosted zone" : `${totalItems} hosted zones`}
+          </div>
         </div>
+
+        {/* Table Area */}
         <div className="p-4">
-          {isLoading ? (
-            <div className="text-sm text-aws-text-secondary">Loading...</div>
-          ) : error ? (
-            <div className="text-sm text-red-600">Error loading hosted zones</div>
-          ) : zones.length === 0 ? (
-            <div className="text-sm text-aws-text-secondary">No hosted zones found.</div>
-          ) : (
-             <ZoneTable zones={zones} />
-          )}
+          <ZoneTable
+            data={data?.zones || []}
+            isLoading={isLoading}
+            onDeleteSelected={handleDeleteSelected}
+            onDeleteSingle={handleDeleteSingle}
+          />
         </div>
+
+        {/* Pagination */}
+        {totalItems > 0 && (
+          <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50 rounded-b-md">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500">Rows per page:</span>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(val) => {
+                  setPageSize(Number(val));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm text-slate-600">
+              <div>
+                Showing {startItem}-{endItem} of {totalItems}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete hosted zone</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {zonesToDelete.length === 1 ? "this hosted zone" : `these ${zonesToDelete.length} hosted zones`}? 
+              This action cannot be undone. All associated DNS records must be deleted first.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteZoneMutation.isPending}
+            >
+              {deleteZoneMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

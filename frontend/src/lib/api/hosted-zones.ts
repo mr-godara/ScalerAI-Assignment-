@@ -1,9 +1,9 @@
 import { api } from "./client";
-import { HostedZone, PaginatedResponse, ZoneListParams } from "@/types/api";
+import { HostedZone, ZoneListResponse, ZoneListParams } from "@/types/api";
 
 export const hostedZonesApi = {
   getZones: (params?: ZoneListParams) => {
-    return api.get<PaginatedResponse<HostedZone>>("/hosted-zones", { params });
+    return api.get<ZoneListResponse>("/hosted-zones", { params });
   },
   getZone: (id: string) => {
     return api.get<HostedZone>(`/hosted-zones/${id}`);

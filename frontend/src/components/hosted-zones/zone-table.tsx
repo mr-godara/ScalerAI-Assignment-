@@ -1,40 +1,244 @@
 "use client";
 
+import { useState } from "react";
+import {
+  ColumnDef,
+  RowSelectionState,
+} from "@tanstack/react-table";
 import { HostedZone } from "@/types/api";
+import { DataTable } from "@/components/common/data-table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eye, Trash2, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
-import { formatDate } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
-export function ZoneTable({ zones }: { zones: HostedZone[] }) {
+interface ZoneTableProps {
+  data: HostedZone[];
+  isLoading: boolean;
+  onDeleteSelected: (ids: string[]) => void;
+  onDeleteSingle: (id: string) => void;
+}
+
+export function ZoneTable({
+  data,
+  isLoading,
+  onDeleteSelected,
+  onDeleteSingle,
+}: ZoneTableProps) {
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  const columns: ColumnDef<HostedZone>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="translate-y-[2px]"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+          className="translate-y-[2px]"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 hover:bg-slate-100 h-8"
+          >
+            Domain name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const name = row.getValue("name") as string;
+        return (
+          <Link
+            href={`/hosted-zones/${row.original.id}`}
+            className="text-blue-600 hover:text-orange-500 hover:underline font-medium"
+          >
+            {name}
+          </Link>
+        );
+      },
+    },
+    {
+      accessorKey: "type",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 hover:bg-slate-100 h-8"
+          >
+            Type
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const type = row.getValue("type") as string;
+        return (
+          <Badge
+            variant="secondary"
+            className={
+              type === "PUBLIC"
+                ? "bg-green-100 text-green-800"
+                : "bg-gray-100 text-gray-800"
+            }
+          >
+            {type === "PUBLIC" ? "Public" : "Private"}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "record_count",
+      header: ({ column }) => {
+        return (
+          <div className="text-right">
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              className="-mr-4 hover:bg-slate-100 h-8"
+            >
+              Record count
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+      cell: ({ row }) => {
+        return (
+          <div className="text-right font-medium pr-4">
+            {row.getValue("record_count")}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "comment",
+      header: "Comment",
+      cell: ({ row }) => {
+        const comment = row.getValue("comment") as string;
+        return (
+          <span className="text-gray-500 truncate max-w-[200px] inline-block">
+            {comment || "-"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="-ml-4 hover:bg-slate-100 h-8"
+          >
+            Created
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("created_at"));
+        return (
+          <span className="text-gray-600 text-sm">
+            {formatDistanceToNow(date, { addSuffix: true })}
+          </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const zone = row.original;
+        return (
+          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className="h-8 w-8 text-gray-500 hover:text-blue-600"
+            >
+              <Link href={`/hosted-zones/${zone.id}`}>
+                <Eye className="h-4 w-4" />
+                <span className="sr-only">View details</span>
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDeleteSingle(zone.id)}
+              className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete</span>
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm text-aws-text">
-        <thead className="border-b border-aws-border bg-aws-bg text-aws-text-secondary">
-          <tr>
-            <th className="py-2 px-3 font-medium">Name</th>
-            <th className="py-2 px-3 font-medium">Type</th>
-            <th className="py-2 px-3 font-medium">Record count</th>
-            <th className="py-2 px-3 font-medium">Description</th>
-            <th className="py-2 px-3 font-medium">Created at</th>
-          </tr>
-        </thead>
-        <tbody>
-          {zones.map((zone) => (
-            <tr key={zone.id} className="border-b border-aws-border hover:bg-aws-bg/50 transition-colors">
-              <td className="py-2 px-3">
-                <Link href={`/hosted-zones/${zone.id}`} className="text-aws-blue hover:underline">
-                  {zone.name}
-                </Link>
-              </td>
-              <td className="py-2 px-3">
-                {zone.private_zone ? "Private" : "Public"}
-              </td>
-              <td className="py-2 px-3">{zone.resource_record_set_count}</td>
-              <td className="py-2 px-3">{zone.comment || "-"}</td>
-              <td className="py-2 px-3">{formatDate(zone.created_at)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-4">
+      {Object.keys(rowSelection).length > 0 && (
+        <div className="flex items-center gap-4 p-2 bg-blue-50 border border-blue-200 rounded-md">
+          <Badge variant="outline" className="bg-white border-blue-300 text-blue-700">
+            {Object.keys(rowSelection).length} selected
+          </Badge>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              const selectedIds = Object.keys(rowSelection).map(
+                (index) => data[parseInt(index, 10)].id
+              );
+              onDeleteSelected(selectedIds);
+              setRowSelection({});
+            }}
+          >
+            Delete selected
+          </Button>
+        </div>
+      )}
+      
+      <DataTable
+        columns={columns}
+        data={data}
+        isLoading={isLoading}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        emptyState={
+          <div className="flex flex-col items-center justify-center py-10 space-y-4">
+            <div className="text-gray-400">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </div>
+            <p className="text-gray-500 text-lg">No hosted zones</p>
+            <Button asChild className="bg-orange-600 hover:bg-orange-700 text-white">
+              <Link href="/hosted-zones/new">Create hosted zone</Link>
+            </Button>
+          </div>
+        }
+      />
     </div>
   );
 }
