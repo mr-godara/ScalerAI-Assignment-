@@ -35,7 +35,7 @@ import {
 import { ConfirmModal } from "@/components/common/confirm-modal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { DNSRecord } from "@/types/api";
 import Link from "next/link";
@@ -314,19 +314,39 @@ export default function ZoneDetailPage({
                     Export <ChevronDown className="ml-2 h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = dnsRecordsApi.exportZoneFileUrl(zoneId, "json", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[]);
-                      link.download = '';
-                      link.click();
+                    <DropdownMenuItem onClick={async () => {
+                      try {
+                        const recordIds = isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[];
+                        const blob = await dnsRecordsApi.downloadExport(zoneId, "json", recordIds);
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `zone-${zoneId}.json`;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        window.URL.revokeObjectURL(url);
+                      } catch (error) {
+                        toast.error("Failed to export zone as JSON");
+                      }
                     }}>
                       Export as JSON
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = dnsRecordsApi.exportZoneFileUrl(zoneId, "bind", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[]);
-                      link.download = '';
-                      link.click();
+                    <DropdownMenuItem onClick={async () => {
+                      try {
+                        const recordIds = isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[];
+                        const blob = await dnsRecordsApi.downloadExport(zoneId, "bind", recordIds);
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `zone-${zoneId}.zone`;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        window.URL.revokeObjectURL(url);
+                      } catch (error) {
+                        toast.error("Failed to export BIND zone file");
+                      }
                     }}>
                       Export as BIND zone file
                     </DropdownMenuItem>

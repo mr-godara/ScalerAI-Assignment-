@@ -31,21 +31,21 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="flex items-center">
         <button
           onClick={onMenuClick}
-          className="mr-4 text-aws-white md:hidden hover:text-aws-orange"
+          className="mr-4 text-white md:hidden hover:text-aws-orange"
         >
           <Menu className="h-5 w-5" />
         </button>
-        <span className="text-aws-white font-semibold text-sm tracking-wide">AWS Route 53</span>
+        <span className="text-white font-semibold text-sm tracking-wide">AWS Route 53</span>
       </div>
       
       <div className="flex items-center gap-6 h-full">
         {/* Mock region selector */}
-        <button className="hidden sm:flex items-center text-aws-white/90 hover:text-aws-white text-sm">
+        <button className="hidden sm:flex items-center text-white/90 hover:text-white text-sm">
           N. Virginia <ChevronDown className="ml-1 h-4 w-4" />
         </button>
 
         {/* Mock support */}
-        <button className="hidden sm:flex items-center text-aws-white/90 hover:text-aws-white text-sm">
+        <button className="hidden sm:flex items-center text-white/90 hover:text-white text-sm">
           Support <ChevronDown className="ml-1 h-4 w-4" />
         </button>
 
@@ -55,7 +55,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         <div className="relative h-full flex items-center" ref={menuRef}>
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center text-aws-white/90 hover:text-aws-white text-sm h-full px-2"
+            className="flex items-center text-white/90 hover:text-white text-sm h-full px-2"
           >
             {user?.email || "user@example.com"} <ChevronDown className="ml-1 h-4 w-4" />
           </button>

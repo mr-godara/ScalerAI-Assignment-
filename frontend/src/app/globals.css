@@ -158,3 +158,33 @@
     @apply bg-aws-bg text-aws-text;
   }
 }
+
+/* Global overrides for dark mode to fix hardcoded light-mode tailwind classes */
+.dark .bg-white {
+  background-color: var(--aws-white) !important;
+  border-color: var(--aws-border) !important;
+}
+.dark .bg-slate-50 {
+  background-color: var(--aws-navy) !important;
+}
+.dark .bg-slate-100, .dark .bg-slate-200 {
+  background-color: var(--aws-navy-light) !important;
+}
+.dark .text-slate-900, .dark .text-slate-800, .dark .text-slate-700 {
+  color: var(--aws-text) !important;
+}
+.dark .text-slate-600, .dark .text-slate-500, .dark .text-slate-400 {
+  color: var(--aws-text-secondary) !important;
+}
+.dark .border-slate-200, .dark .border-slate-300 {
+  border-color: var(--aws-border) !important;
+}
+.dark .bg-blue-50 {
+  background-color: var(--aws-navy-light) !important;
+}
+.dark .text-blue-800, .dark .text-blue-600 {
+  color: var(--aws-blue) !important;
+}
+.dark .border-blue-200 {
+  border-color: var(--aws-blue-dark) !important;
+}

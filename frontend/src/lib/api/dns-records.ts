@@ -40,10 +40,21 @@ export const dnsRecordsApi = {
     });
   },
   exportZoneFileUrl: (zoneId: string, format: "bind" | "json", recordIds?: string[]) => {
-    let url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/hosted-zones/${zoneId}/records/export?format=${format}`;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+    let url = `${baseUrl}/hosted-zones/${zoneId}/records/export?format=${format}`;
     if (recordIds && recordIds.length > 0) {
       url += `&record_ids=${recordIds.join(",")}`;
     }
     return url;
+  },
+  downloadExport: async (zoneId: string, format: "bind" | "json", recordIds?: string[]) => {
+    let url = `/hosted-zones/${zoneId}/records/export?format=${format}`;
+    if (recordIds && recordIds.length > 0) {
+      url += `&record_ids=${recordIds.join(",")}`;
+    }
+    // We use the raw axios instance to get the Blob response directly
+    const { apiClient } = await import("./client");
+    const response = await apiClient.get(url, { responseType: "blob" });
+    return response.data as Blob;
   },
 };

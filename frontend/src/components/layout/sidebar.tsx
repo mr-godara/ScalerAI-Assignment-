@@ -59,7 +59,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       >
         <div className="flex h-[40px] shrink-0 items-center px-4 border-b border-aws-navy-light/50 mt-12 md:mt-0">
           <Globe className="h-5 w-5 text-aws-orange mr-2" />
-          <h1 className="text-aws-white text-base font-semibold tracking-wide">Route 53</h1>
+          <h1 className="text-white text-base font-semibold tracking-wide">Route 53</h1>
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4">
@@ -85,14 +85,14 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                         className={cn(
                           "group flex items-center px-4 py-2 text-[13px] font-medium border-l-[3px] transition-colors",
                           isActive
-                            ? "border-aws-orange bg-aws-navy-light text-aws-white"
-                            : "border-transparent text-white/80 hover:bg-aws-navy-light hover:text-aws-white"
+                            ? "border-aws-orange bg-aws-navy-light text-white"
+                            : "border-transparent text-white/80 hover:bg-aws-navy-light hover:text-white"
                         )}
                       >
                         <item.icon
                           className={cn(
                             "mr-3 h-4 w-4 shrink-0",
-                            isActive ? "text-aws-white" : "text-white/70 group-hover:text-aws-white"
+                            isActive ? "text-white" : "text-white/70 group-hover:text-white"
                           )}
                         />
                         {item.name}

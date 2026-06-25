@@ -27,8 +27,19 @@ apiClient.interceptors.response.use(
       }
     }
 
+    let detailStr = error.message || "An unexpected error occurred";
+    const detail = error.response?.data?.detail;
+    
+    if (typeof detail === "string") {
+      detailStr = detail;
+    } else if (Array.isArray(detail)) {
+      detailStr = detail.map((err: any) => err.msg || err.message || JSON.stringify(err)).join(", ");
+    } else if (typeof detail === "object" && detail !== null) {
+      detailStr = detail.message || detail.detail || JSON.stringify(detail);
+    }
+
     const appError: AppError = {
-      message: error.response?.data?.detail || error.message || "An unexpected error occurred",
+      message: detailStr,
       status: error.response?.status,
     };
 
@@ -48,6 +59,8 @@ export const api = {
     apiClient.post<T, AxiosResponse<T>>(url, data, config).then((res) => res.data),
   put: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
     apiClient.put<T, AxiosResponse<T>>(url, data, config).then((res) => res.data),
+  patch: <T>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    apiClient.patch<T, AxiosResponse<T>>(url, data, config).then((res) => res.data),
   delete: <T>(url: string, config?: AxiosRequestConfig) =>
     apiClient.delete<T, AxiosResponse<T>>(url, config).then((res) => res.data),
 };

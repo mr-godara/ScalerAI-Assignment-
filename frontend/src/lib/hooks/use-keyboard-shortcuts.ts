@@ -8,6 +8,7 @@ export type ShortcutAction = {
   description: string;
   category?: string;
   preventInput?: boolean; // If true (default), don't trigger when an input is focused.
+  ctrl?: boolean; // Requires Ctrl or Cmd to be pressed
 };
 
 export const useKeyboardShortcuts = (shortcuts: ShortcutAction[]) => {
@@ -54,8 +55,16 @@ export const useKeyboardShortcuts = (shortcuts: ShortcutAction[]) => {
         } else {
           // Single key
           if (key === s.key) {
+            // Check modifier
+            if (s.ctrl && !(event.ctrlKey || event.metaKey)) {
+              continue; // Modifier not pressed, but required
+            }
+            if (!s.ctrl && (event.ctrlKey || event.metaKey)) {
+              // If not specified, but user is pressing Ctrl/Cmd, skip so we don't block normal shortcuts
+              continue;
+            }
+            
             // For single keys, only preventDefault if it's not a generic key that might break input
-            // Actually, we already skip if isInputFocused && prevent
             event.preventDefault();
             s.action();
             sequenceBuffer.current = [];

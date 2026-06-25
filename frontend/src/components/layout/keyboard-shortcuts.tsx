@@ -17,11 +17,12 @@ export function KeyboardShortcutsModal() {
 
   useKeyboardShortcuts([
     {
-      key: "?",
+      key: "/",
+      ctrl: true,
       action: () => setIsOpen(true),
       description: "Show keyboard shortcuts",
       category: "Global",
-      preventInput: true,
+      preventInput: false,
     },
     {
       key: ["g", "h"],
@@ -63,7 +64,7 @@ export function KeyboardShortcutsModal() {
   ]);
 
   const shortcuts = [
-    { keys: ["?"], desc: "Show keyboard shortcuts" },
+    { keys: ["Ctrl", "/"], desc: "Show keyboard shortcuts" },
     { keys: ["g", "h"], desc: "Go to hosted zones" },
     { keys: ["g", "d"], desc: "Go to dashboard" },
     { keys: ["c", "z"], desc: "Create new hosted zone" },

@@ -28,7 +28,7 @@ export const useCreateZone = () => {
       toast.success("Hosted zone created", data.name);
     },
     onError: (error) => {
-      toast.error(error);
+      toast.error(error?.message || "Failed to create zone");
     },
   });
 };
@@ -44,7 +44,7 @@ export const useUpdateZone = () => {
       toast.success("Hosted zone updated");
     },
     onError: (error) => {
-      toast.error(error);
+      toast.error(error?.message || "Failed to update zone");
     },
   });
 };
@@ -58,7 +58,7 @@ export const useDeleteZone = () => {
       toast.success("Hosted zone deleted");
     },
     onError: (error) => {
-      toast.error(error);
+      toast.error(error?.message || "Failed to delete zone");
     },
   });
 };

@@ -21,7 +21,7 @@ export const useCreateRecord = (zoneId: string) => {
       toast.success("Record created successfully");
     },
     onError: (error) => {
-      toast.error(error);
+      toast.error(error?.message || "Failed to create record");
     },
   });
 };
@@ -36,7 +36,7 @@ export const useUpdateRecord = (zoneId: string) => {
       toast.success("Record saved");
     },
     onError: (error) => {
-      toast.error(error);
+      toast.error(error?.message || "Failed to update record");
     },
   });
 };
@@ -50,7 +50,7 @@ export const useDeleteRecord = (zoneId: string) => {
       toast.success("Record deleted");
     },
     onError: (error) => {
-      toast.error(error);
+      toast.error(error?.message || "Failed to delete record");
     },
   });
 };

@@ -14,7 +14,11 @@ export default function CreateHostedZonePage() {
       <ZoneForm
         isPending={createMutation.isPending}
         onSubmit={(data) => {
-          createMutation.mutate(data, {
+          createMutation.mutate({
+            name: data.name,
+            comment: data.comment,
+            type: data.privateZone ? "PRIVATE" : "PUBLIC"
+          } as any, {
             onSuccess: () => {
               router.push("/hosted-zones");
             },

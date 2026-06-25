@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const zoneSchema = z.object({
-  name: z.string().min(1, "Zone name is required").endsWith(".", "Zone name must end with a dot"),
+  name: z.string().min(1, "Zone name is required"),
   comment: z.string().optional(),
   privateZone: z.boolean().default(false),
 });

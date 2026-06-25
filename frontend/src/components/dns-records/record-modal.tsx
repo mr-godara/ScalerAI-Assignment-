@@ -34,7 +34,7 @@ const recordSchema = z.object({
   alias_target: z.string().optional(),
   ttl: z.number().min(0),
   ttlUnit: z.enum(["seconds", "minutes", "hours", "days"]).default("seconds"),
-  routing_policy: z.string().default("SIMPLE"),
+  routing_policy: z.string().default("Simple"),
   comment: z.string().max(256).optional(),
   
   // Dynamic fields
@@ -93,7 +93,7 @@ export function RecordModal({
     alias_target: "",
     ttl: 300,
     ttlUnit: "seconds",
-    routing_policy: "SIMPLE",
+    routing_policy: "Simple",
     comment: "",
     value_textarea: "",
     value_single: "",
@@ -393,12 +393,12 @@ export function RecordModal({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SIMPLE">Simple routing</SelectItem>
-                    <SelectItem value="WEIGHTED" disabled>Weighted (Pro)</SelectItem>
-                    <SelectItem value="GEOLOCATION" disabled>Geolocation (Pro)</SelectItem>
-                    <SelectItem value="LATENCY" disabled>Latency (Pro)</SelectItem>
-                    <SelectItem value="FAILOVER" disabled>Failover (Pro)</SelectItem>
-                    <SelectItem value="MULTIVALUE" disabled>Multivalue answer (Pro)</SelectItem>
+                    <SelectItem value="Simple">Simple routing</SelectItem>
+                    <SelectItem value="Weighted" disabled>Weighted (Pro)</SelectItem>
+                    <SelectItem value="Geolocation" disabled>Geolocation (Pro)</SelectItem>
+                    <SelectItem value="Latency" disabled>Latency (Pro)</SelectItem>
+                    <SelectItem value="Failover" disabled>Failover (Pro)</SelectItem>
+                    <SelectItem value="Multivalue" disabled>Multivalue answer (Pro)</SelectItem>
                   </SelectContent>
                 </Select>
               )}
