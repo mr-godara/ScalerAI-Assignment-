@@ -62,8 +62,8 @@ export function ImportModal({ isOpen, onClose, zoneId }: ImportModalProps) {
       if (data.errors && data.errors.length > 0) {
         toast.warning(`Import completed with some errors or skipped records.`);
       }
-    } catch (err: any) {
-      // The hook handles toast for generic errors, but we can catch it here too
+    } catch {
+      // The hook handles toast for generic errors.
     }
   };
 

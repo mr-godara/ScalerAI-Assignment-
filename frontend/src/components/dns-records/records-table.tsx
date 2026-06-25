@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   ColumnDef,
+  OnChangeFn,
   RowSelectionState,
 } from "@tanstack/react-table";
 import { DNSRecord } from "@/types/api";
@@ -26,7 +27,7 @@ interface RecordsTableProps {
   isAllSelected: boolean;
   setIsAllSelected: (v: boolean) => void;
   rowSelection: RowSelectionState;
-  setRowSelection: (updater: any) => void;
+  setRowSelection: OnChangeFn<RowSelectionState>;
   onBulkEditTtl: (ids: string[], isAll: boolean) => void;
 }
 

@@ -30,11 +30,11 @@ import { Trash2, Plus } from "lucide-react";
 const recordSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   type: z.enum(["A", "AAAA", "CNAME", "TXT", "MX", "NS", "PTR", "SRV", "CAA", "SOA"]),
-  alias: z.boolean().default(false),
+  alias: z.boolean(),
   alias_target: z.string().optional(),
   ttl: z.number().min(0),
-  ttlUnit: z.enum(["seconds", "minutes", "hours", "days"]).default("seconds"),
-  routing_policy: z.string().default("Simple"),
+  ttlUnit: z.enum(["seconds", "minutes", "hours", "days"]),
+  routing_policy: z.string(),
   comment: z.string().max(256).optional(),
   
   // Dynamic fields
@@ -49,6 +49,22 @@ const recordSchema = z.object({
 }, { message: "Alias target is required when alias is true", path: ["alias_target"] });
 
 type FormValues = z.infer<typeof recordSchema>;
+
+const emptyRecordFormValues: FormValues = {
+  name: "",
+  type: "A",
+  alias: false,
+  alias_target: "",
+  ttl: 300,
+  ttlUnit: "seconds",
+  routing_policy: "Simple",
+  comment: "",
+  value_textarea: "",
+  value_single: "",
+  value_mx: [{ priority: "10", hostname: "" }],
+  value_srv: [{ priority: "10", weight: "10", port: "80", target: "" }],
+  value_caa: [{ flags: "0", tag: "issue", value: "" }],
+};
 
 interface RecordModalProps {
   isOpen: boolean;
@@ -86,28 +102,14 @@ export function RecordModal({
 }: RecordModalProps) {
   const isEditing = !!initialData;
 
-  const defaultValues: FormValues = {
-    name: "",
-    type: "A",
-    alias: false,
-    alias_target: "",
-    ttl: 300,
-    ttlUnit: "seconds",
-    routing_policy: "Simple",
-    comment: "",
-    value_textarea: "",
-    value_single: "",
-    value_mx: [{ priority: "10", hostname: "" }],
-    value_srv: [{ priority: "10", weight: "10", port: "80", target: "" }],
-    value_caa: [{ flags: "0", tag: "issue", value: "" }],
-  };
-
   const form = useForm<FormValues>({
     resolver: zodResolver(recordSchema),
-    defaultValues,
+    defaultValues: emptyRecordFormValues,
   });
 
   const { control, handleSubmit, watch, reset, register, setValue } = form;
+  // React Hook Form's watch API is expected here for conditional record inputs.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const type = watch("type");
   const alias = watch("alias");
 
@@ -120,7 +122,7 @@ export function RecordModal({
     if (isOpen && initialData) {
       const { ttl, ttlUnit } = getTTLAndUnit(initialData.ttl);
       
-      const formValues: any = {
+      const formValues: Partial<FormValues> = {
         name: initialData.name.replace(`.${zoneName}`, ""),
         type: initialData.type,
         alias: initialData.alias,
@@ -153,11 +155,11 @@ export function RecordModal({
           });
         }
       }
-      reset(formValues);
+      reset(formValues as FormValues);
     } else if (isOpen && !initialData) {
-      reset(defaultValues);
+      reset(emptyRecordFormValues);
     }
-  }, [isOpen, initialData, zoneName, reset]);
+  }, [initialData, isOpen, reset, zoneName]);
 
   const onFormSubmit = (data: FormValues) => {
     // Transform to DNSRecord format
@@ -230,6 +232,7 @@ export function RecordModal({
                 name="type"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={(val) => {
+                    if (!val) return;
                     field.onChange(val);
                     if (val === "CNAME") setValue("alias", false); // CNAME cannot be alias at apex in real AWS, but here we just reset.
                   }}>
@@ -291,7 +294,7 @@ export function RecordModal({
                         : "Enter one value per line"
                     }
                   />
-                  {type === "TXT" && <p className="text-xs text-slate-500 mt-1">Enclose text in quotation marks (" ").</p>}
+                  {type === "TXT" && <p className="text-xs text-slate-500 mt-1">Enclose text in quotation marks (&quot; &quot;).</p>}
                 </div>
               )}
               {type === "CNAME" && (
@@ -365,7 +368,7 @@ export function RecordModal({
                 control={control}
                 name="ttlUnit"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value} onValueChange={(val) => val && field.onChange(val)}>
                     <SelectTrigger className="w-[120px]">
                       <SelectValue />
                     </SelectTrigger>
@@ -388,7 +391,7 @@ export function RecordModal({
               control={control}
               name="routing_policy"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select value={field.value} onValueChange={(val) => val && field.onChange(val)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

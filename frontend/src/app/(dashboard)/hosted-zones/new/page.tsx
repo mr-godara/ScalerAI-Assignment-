@@ -18,7 +18,7 @@ export default function CreateHostedZonePage() {
             name: data.name,
             comment: data.comment,
             type: data.privateZone ? "PRIVATE" : "PUBLIC"
-          } as any, {
+          }, {
             onSuccess: () => {
               router.push("/hosted-zones");
             },

@@ -2,7 +2,7 @@
 
 import { useCurrentUser, useLogout } from "@/lib/hooks/use-auth";
 import { ThemeToggle } from "./theme-toggle";
-import { Menu, ChevronDown, HelpCircle, Bell } from "lucide-react";
+import { Menu, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {

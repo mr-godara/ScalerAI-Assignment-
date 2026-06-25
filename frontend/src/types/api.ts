@@ -1,16 +1,18 @@
-export interface PaginatedResponse<T> {
-  // This is a generic, but we actually need specific types to match backend keys
+export interface PaginatedResponse {
   total: number;
   page: number;
   page_size: number;
   total_pages: number;
 }
 
-export interface ZoneListResponse extends PaginatedResponse<HostedZone> {
+export type HostedZoneType = "PUBLIC" | "PRIVATE";
+export type DNSRecordType = "A" | "AAAA" | "CNAME" | "TXT" | "MX" | "NS" | "SOA" | "PTR" | "SRV" | "CAA";
+
+export interface ZoneListResponse extends PaginatedResponse {
   zones: HostedZone[];
 }
 
-export interface RecordListResponse extends PaginatedResponse<DNSRecord> {
+export interface RecordListResponse extends PaginatedResponse {
   records: DNSRecord[];
 }
 
@@ -23,18 +25,16 @@ export interface AppError {
 export interface User {
   id: string;
   email: string;
-  username: string;
-  is_active: boolean;
-  is_superuser: boolean;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface HostedZone {
   id: string;
   name: string;
-  caller_reference: string;
+  caller_reference?: string;
   comment?: string;
-  type: string; // The backend returns ZoneType which is a string (e.g., 'PUBLIC' or 'PRIVATE')
+  type: HostedZoneType;
   record_count: number;
   created_at: string;
   updated_at: string;
@@ -44,7 +44,7 @@ export interface DNSRecord {
   id: string;
   zone_id: string;
   name: string;
-  type: string;
+  type: DNSRecordType;
   value: string[];
   ttl: number;
   routing_policy: string;
@@ -58,6 +58,8 @@ export interface DNSRecord {
 export interface LoginResponse {
   access_token: string;
   token_type: string;
+  expires_in: number;
+  user: Pick<User, "id" | "email">;
 }
 
 export interface ZoneListParams {
@@ -73,4 +75,3 @@ export interface RecordListParams {
   search?: string;
   type?: string;
 }
-

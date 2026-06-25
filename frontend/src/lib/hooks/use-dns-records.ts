@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dnsRecordsApi } from "../api/dns-records";
 import { toast } from "../toast";
 import { DNSRecord, RecordListParams } from "@/types/api";
+import { getErrorMessage } from "@/lib/utils";
 
 export const useRecords = (zoneId: string, params?: RecordListParams) => {
   return useQuery({
@@ -64,8 +65,8 @@ export const useBulkDeleteRecords = (zoneId: string) => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
       toast.success("Records deleted");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to delete records");
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "Failed to delete records"));
     },
   });
 };
@@ -79,8 +80,8 @@ export const useBulkUpdateRecords = (zoneId: string) => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
       toast.success("Records updated");
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update records");
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "Failed to update records"));
     },
   });
 };
@@ -90,11 +91,11 @@ export const useImportZoneFile = (zoneId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (file: File) => dnsRecordsApi.importZoneFile(zoneId, file),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
     },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to import zone file");
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "Failed to import zone file"));
     },
   });
 };

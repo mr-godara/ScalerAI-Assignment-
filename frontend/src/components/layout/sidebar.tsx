@@ -10,7 +10,6 @@ import {
   HeartPulse,
   Search,
   User,
-  Menu,
 } from "lucide-react";
 
 const navSections = [

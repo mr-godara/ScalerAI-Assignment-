@@ -11,12 +11,20 @@ import {
   useBulkUpdateRecords,
 } from "@/lib/hooks/use-dns-records";
 import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
-import { useZone, useDeleteZone } from "@/lib/hooks/use-hosted-zones";
+import { useZone, useDeleteZone, useUpdateZone } from "@/lib/hooks/use-hosted-zones";
 import { RecordsTable } from "@/components/dns-records/records-table";
 import { RecordModal } from "@/components/dns-records/record-modal";
 import { ImportModal } from "@/components/dns-records/import-modal";
 import { BulkEditModal } from "@/components/dns-records/bulk-edit-modal";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { dnsRecordsApi } from "@/lib/api/dns-records";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -32,14 +41,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { ConfirmModal } from "@/components/common/confirm-modal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { DNSRecord } from "@/types/api";
+import { RowSelectionState } from "@tanstack/react-table";
 import Link from "next/link";
 import { CopyButton } from "@/components/common/copy-button";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function ZoneDetailPage({
   params,
@@ -52,7 +64,11 @@ export default function ZoneDetailPage({
   // Zone Data
   const { data: zone, isLoading: isZoneLoading } = useZone(zoneId);
   const deleteZoneMutation = useDeleteZone();
+  const updateZoneMutation = useUpdateZone();
   const [deleteZoneModalOpen, setDeleteZoneModalOpen] = useState(false);
+  const [editZoneModalOpen, setEditZoneModalOpen] = useState(false);
+  const [editZoneComment, setEditZoneComment] = useState("");
+  const [editZoneType, setEditZoneType] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
 
   // Records Data
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,7 +85,8 @@ export default function ZoneDetailPage({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleTypeChange = (value: string) => {
+  const handleTypeChange = (value: string | null) => {
+    if (!value) return;
     setTypeFilter(value);
     setPage(1);
   };
@@ -96,7 +113,7 @@ export default function ZoneDetailPage({
   const [deleteRecordModalOpen, setDeleteRecordModalOpen] = useState(false);
   const [recordsToDelete, setRecordsToDelete] = useState<string[]>([]);
   
-  const [rowSelection, setRowSelection] = useState<any>({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isAllSelected, setIsAllSelected] = useState(false);
   
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
@@ -110,6 +127,12 @@ export default function ZoneDetailPage({
   const handleCreateClick = () => {
     setEditingRecord(undefined);
     setIsRecordModalOpen(true);
+  };
+
+  const handleEditZoneClick = () => {
+    setEditZoneComment(zone?.comment || "");
+    setEditZoneType(zone?.type === "PRIVATE" ? "PRIVATE" : "PUBLIC");
+    setEditZoneModalOpen(true);
   };
 
   const handleEditClick = (record: DNSRecord) => {
@@ -127,8 +150,8 @@ export default function ZoneDetailPage({
         toast.success("Record created successfully");
       }
       setIsRecordModalOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save record");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to save record"));
     }
   };
 
@@ -154,7 +177,7 @@ export default function ZoneDetailPage({
       await bulkUpdateMutation.mutateAsync({ ids: recordsToUpdate, isAll: isUpdateAll, updates: { ttl } });
       setRowSelection({});
       setIsAllSelected(false);
-    } catch (err) {
+    } catch {
       // Handled by hook
     }
   };
@@ -183,8 +206,8 @@ export default function ZoneDetailPage({
       setDeleteProgress(null);
       setRowSelection({});
       setIsAllSelected(false);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete record(s)");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to delete record(s)"));
       setDeleteProgress(null);
     }
   };
@@ -194,9 +217,24 @@ export default function ZoneDetailPage({
       await deleteZoneMutation.mutateAsync(zoneId);
       toast.success("Hosted zone deleted successfully");
       router.push("/hosted-zones");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete hosted zone");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to delete hosted zone"));
       setDeleteZoneModalOpen(false);
+    }
+  };
+
+  const handleUpdateZone = async () => {
+    try {
+      await updateZoneMutation.mutateAsync({
+        id: zoneId,
+        data: {
+          comment: editZoneComment.trim() || undefined,
+          type: editZoneType,
+        },
+      });
+      setEditZoneModalOpen(false);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to update hosted zone"));
     }
   };
 
@@ -269,7 +307,9 @@ export default function ZoneDetailPage({
           )}
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">Edit</Button>
+          <Button variant="outline" onClick={handleEditZoneClick}>
+            Edit
+          </Button>
           <Button variant="outline" onClick={() => setDeleteZoneModalOpen(true)}>
             Delete zone
           </Button>
@@ -278,7 +318,7 @@ export default function ZoneDetailPage({
 
       {/* Tabs */}
       <Tabs defaultValue="records" className="w-full">
-        <TabsList className="bg-transparent border-b border-slate-200 w-full justify-start h-auto p-0 rounded-none space-x-6">
+        <TabsList variant="line" className="bg-transparent border-b border-slate-200 w-full justify-start h-auto p-0 rounded-none gap-6">
           <TabsTrigger 
             value="records"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:text-orange-600 data-[state=active]:shadow-none px-1 py-3"
@@ -326,7 +366,7 @@ export default function ZoneDetailPage({
                         link.click();
                         link.remove();
                         window.URL.revokeObjectURL(url);
-                      } catch (error) {
+                      } catch {
                         toast.error("Failed to export zone as JSON");
                       }
                     }}>
@@ -344,7 +384,7 @@ export default function ZoneDetailPage({
                         link.click();
                         link.remove();
                         window.URL.revokeObjectURL(url);
-                      } catch (error) {
+                      } catch {
                         toast.error("Failed to export BIND zone file");
                       }
                     }}>
@@ -407,6 +447,7 @@ export default function ZoneDetailPage({
                   <Select
                     value={pageSize.toString()}
                     onValueChange={(val) => {
+                      if (!val) return;
                       setPageSize(Number(val));
                       setPage(1);
                     }}
@@ -459,6 +500,75 @@ export default function ZoneDetailPage({
           Tags management coming soon.
         </TabsContent>
       </Tabs>
+
+      {/* Edit Hosted Zone Modal */}
+      <Dialog open={editZoneModalOpen} onOpenChange={setEditZoneModalOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Edit hosted zone</DialogTitle>
+            <DialogDescription>
+              Update the hosted zone type and optional description.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="zone-name">Domain name</Label>
+              <Input id="zone-name" value={zone.name} disabled />
+              <p className="text-xs text-slate-500">Hosted zone names cannot be changed after creation.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="zone-type">Type</Label>
+              <Select
+                value={editZoneType}
+                onValueChange={(value) => {
+                  if (value === "PUBLIC" || value === "PRIVATE") {
+                    setEditZoneType(value);
+                  }
+                }}
+              >
+                <SelectTrigger id="zone-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PUBLIC">Public hosted zone</SelectItem>
+                  <SelectItem value="PRIVATE">Private hosted zone</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="zone-comment">Description - optional</Label>
+              <Textarea
+                id="zone-comment"
+                value={editZoneComment}
+                onChange={(event) => setEditZoneComment(event.target.value)}
+                rows={3}
+                maxLength={256}
+                placeholder="Enter a description"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditZoneModalOpen(false)}
+              disabled={updateZoneMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+              onClick={handleUpdateZone}
+              disabled={updateZoneMutation.isPending}
+            >
+              {updateZoneMutation.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Record Modal */}
       <RecordModal

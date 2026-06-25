@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "../api/auth";
 import { useAuthStore } from "../stores/auth-store";
 import { useRouter } from "next/navigation";
-import { AppError } from "@/types/api";
 
 export const useLogin = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -11,7 +10,7 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
-      setAuth(data.user as any, data.access_token);
+      setAuth(data.user, data.access_token);
       // Set cookie for middleware
       document.cookie = `auth-token=${data.access_token}; path=/; max-age=86400; samesite=lax`;
       router.push("/hosted-zones");

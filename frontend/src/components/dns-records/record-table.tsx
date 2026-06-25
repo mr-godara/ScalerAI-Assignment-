@@ -5,7 +5,7 @@ import { formatRecordValue } from "@/lib/utils";
 
 import { SkeletonTable } from "../common/skeleton-table";
 
-export function RecordTable({ records, zoneId, isLoading }: { records: DNSRecord[], zoneId: string, isLoading?: boolean }) {
+export function RecordTable({ records, isLoading }: { records: DNSRecord[], isLoading?: boolean }) {
   if (isLoading) {
     return <SkeletonTable columns={5} rows={5} />;
   }

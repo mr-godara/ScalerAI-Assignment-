@@ -16,6 +16,7 @@ import { ConfirmModal } from "@/components/common/confirm-modal";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function HostedZonesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,7 +35,8 @@ export default function HostedZonesPage() {
   }, [searchQuery]);
 
   // Reset page when type filter changes
-  const handleTypeChange = (value: string) => {
+  const handleTypeChange = (value: string | null) => {
+    if (!value) return;
     setTypeFilter(value);
     setPage(1);
   };
@@ -76,8 +78,8 @@ export default function HostedZonesPage() {
       );
       setDeleteModalOpen(false);
       refetch();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete hosted zone(s)");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to delete hosted zone(s)"));
     }
   };
 
@@ -153,6 +155,7 @@ export default function HostedZonesPage() {
               <Select
                 value={pageSize.toString()}
                 onValueChange={(val) => {
+                  if (!val) return;
                   setPageSize(Number(val));
                   setPage(1);
                 }}
