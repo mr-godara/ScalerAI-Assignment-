@@ -67,7 +67,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="rounded-md border bg-white shadow-sm overflow-hidden">
-      <Table>
+      <Table aria-label="Data table">
         <TableHeader className="bg-slate-50 border-b border-slate-200">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-slate-50 border-slate-200">
@@ -86,7 +86,7 @@ export function DataTable<TData, TValue>({
             </TableRow>
           ))}
         </TableHeader>
-        <TableBody>
+        <TableBody aria-busy={isLoading}>
           {isLoading ? (
             <TableRow>
               <TableCell colSpan={columns.length} className="p-0">

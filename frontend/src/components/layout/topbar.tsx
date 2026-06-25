@@ -1,6 +1,7 @@
 "use client";
 
 import { useCurrentUser, useLogout } from "@/lib/hooks/use-auth";
+import { ThemeToggle } from "./theme-toggle";
 import { Menu, ChevronDown, HelpCircle, Bell } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -47,6 +48,8 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         <button className="hidden sm:flex items-center text-aws-white/90 hover:text-aws-white text-sm">
           Support <ChevronDown className="ml-1 h-4 w-4" />
         </button>
+
+        <ThemeToggle />
 
         {/* User menu dropdown */}
         <div className="relative h-full flex items-center" ref={menuRef}>

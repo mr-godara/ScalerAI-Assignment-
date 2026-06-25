@@ -130,14 +130,24 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.274 0.006 286.033);
   --sidebar-ring: oklch(0.446 0.043 257.281);
+
+  /* AWS DARK COLOR SYSTEM */
+  --aws-navy: #232F3E; /* stays dark */
+  --aws-navy-light: #31465F;
+  --aws-orange: #FF9900;
+  --aws-orange-dark: #EC7211;
+  --aws-blue: #4da4ff;
+  --aws-blue-dark: #2284e6;
+  --aws-text: #e0e0e0;
+  --aws-text-secondary: #a0a0a0;
+  --aws-border: #444444;
+  --aws-bg: #1a1a1a;
+  --aws-white: #2d2d2d;
 }
 
 @layer base {

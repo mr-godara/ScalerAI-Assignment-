@@ -211,6 +211,7 @@ export function RecordsTable({
             {Object.keys(rowSelection).length} selected
           </Badge>
           <Button
+            id="bulk-delete-btn"
             variant="destructive"
             size="sm"
             onClick={() => {

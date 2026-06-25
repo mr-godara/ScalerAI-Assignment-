@@ -9,6 +9,7 @@ import {
   useDeleteRecord,
   useBulkDeleteRecords,
 } from "@/lib/hooks/use-dns-records";
+import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { useZone, useDeleteZone } from "@/lib/hooks/use-hosted-zones";
 import { RecordsTable } from "@/components/dns-records/records-table";
 import { RecordModal } from "@/components/dns-records/record-modal";
@@ -146,6 +147,28 @@ export default function ZoneDetailPage({
       setDeleteZoneModalOpen(false);
     }
   };
+
+  useKeyboardShortcuts([
+    {
+      key: "n",
+      action: handleCreateClick,
+      description: "Create new record",
+    },
+    {
+      key: "Delete",
+      action: () => {
+        if (Object.keys(recordsToDelete).length > 0 || (typeof window !== 'undefined' && document.querySelectorAll('[aria-selected="true"]').length > 0)) {
+           // Find selected from DOM or wait, recordsToDelete isn't currently populated until "Delete selected" button is clicked in RecordsTable. 
+           // In RecordsTable we don't expose rowSelection directly to this component. 
+           // If we press Delete, we might not have the IDs here unless we lift rowSelection state up.
+           // For simplicity, we can trigger the delete button in the UI if it's visible.
+           const deleteBtn = document.getElementById('bulk-delete-btn');
+           if (deleteBtn) deleteBtn.click();
+        }
+      },
+      description: "Delete selected records",
+    }
+  ]);
 
   const totalItems = recordsData?.total || 0;
   const totalPages = recordsData?.total_pages || 1;

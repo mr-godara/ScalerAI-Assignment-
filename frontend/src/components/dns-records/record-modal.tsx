@@ -208,6 +208,7 @@ export function RecordModal({
             <div className="flex items-center">
               <Input
                 {...register("name")}
+                aria-describedby={form.formState.errors.name ? "name-error" : undefined}
                 className="rounded-r-none border-r-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 placeholder="e.g. www"
               />
@@ -216,7 +217,7 @@ export function RecordModal({
               </div>
             </div>
             {form.formState.errors.name && (
-              <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+              <p id="name-error" className="text-sm text-red-500">{form.formState.errors.name.message}</p>
             )}
           </div>
 
@@ -268,9 +269,9 @@ export function RecordModal({
           {alias ? (
             <div className="space-y-2 bg-blue-50/50 p-4 rounded-md border border-blue-100">
               <Label>Route traffic to</Label>
-              <Input {...register("alias_target")} placeholder="e.g. s3-website-us-east-1.amazonaws.com" />
+              <Input {...register("alias_target")} aria-describedby={form.formState.errors.alias_target ? "alias-error" : undefined} placeholder="e.g. s3-website-us-east-1.amazonaws.com" />
               {form.formState.errors.alias_target && (
-                <p className="text-sm text-red-500">{form.formState.errors.alias_target.message}</p>
+                <p id="alias-error" className="text-sm text-red-500">{form.formState.errors.alias_target.message}</p>
               )}
             </div>
           ) : (

@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/common/error-boundary";
+import { KeyboardShortcutsModal } from "@/components/layout/keyboard-shortcuts";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
             {children}
           </ErrorBoundary>
           <Toaster position="top-right" richColors closeButton theme="dark" />
+          <KeyboardShortcutsModal />
         </Providers>
       </body>
     </html>
