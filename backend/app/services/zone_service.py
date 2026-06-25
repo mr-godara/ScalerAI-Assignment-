@@ -363,16 +363,17 @@ class ZoneService:
     def bulk_delete_records(
         db: Session,
         zone: HostedZone,
-        record_ids: list[str],
+        record_ids: list[str] | None = None,
+        delete_all: bool = False,
     ) -> int:
         """
-        Delete multiple records by ID, skipping default NS and SOA records at the apex.
+        Delete multiple records by ID or all records, skipping default NS and SOA records at the apex.
         """
-        records_to_delete = (
-            db.query(DnsRecord)
-            .filter(DnsRecord.id.in_(record_ids), DnsRecord.zone_id == zone.id)
-            .all()
-        )
+        query = db.query(DnsRecord).filter(DnsRecord.zone_id == zone.id)
+        if not delete_all and record_ids is not None:
+            query = query.filter(DnsRecord.id.in_(record_ids))
+            
+        records_to_delete = query.all()
         
         deleted_count = 0
         for record in records_to_delete:
@@ -387,3 +388,39 @@ class ZoneService:
             db.commit()
             
         return deleted_count
+
+    @staticmethod
+    def bulk_update_records(
+        db: Session,
+        zone: HostedZone,
+        updates: dict,
+        record_ids: list[str] | None = None,
+        update_all: bool = False,
+    ) -> int:
+        """
+        Update multiple records by ID or all records, skipping default NS and SOA records at the apex.
+        """
+        query = db.query(DnsRecord).filter(DnsRecord.zone_id == zone.id)
+        if not update_all and record_ids is not None:
+            query = query.filter(DnsRecord.id.in_(record_ids))
+            
+        records_to_update = query.all()
+        
+        updated_count = 0
+        for record in records_to_update:
+            if record.name == zone.name and record.type in (RecordType.NS, RecordType.SOA):
+                continue
+            
+            for field, value in updates.items():
+                if value is not None:
+                    setattr(record, field, value)
+                    
+            record.updated_at = _utcnow()
+            updated_count += 1
+            
+        if updated_count > 0:
+            db.flush()
+            zone.updated_at = _utcnow()
+            db.commit()
+            
+        return updated_count

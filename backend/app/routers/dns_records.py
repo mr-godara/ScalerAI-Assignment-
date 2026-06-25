@@ -12,6 +12,7 @@ from app.schemas.dns_record import (
     DnsRecordPublic,
     DnsRecordUpdate,
     DnsRecordBulkDelete,
+    DnsRecordBulkUpdate,
     validate_record_value,
     ImportResponse,
 )
@@ -119,8 +120,33 @@ def bulk_delete_records(
     current_user: CurrentUserDep,
 ) -> dict:
     zone = _get_zone_or_404(db, zone_id, current_user.id)
-    deleted_count = ZoneService.bulk_delete_records(db, zone, payload.record_ids)
+    deleted_count = ZoneService.bulk_delete_records(db, zone, payload.record_ids, delete_all=payload.all)
     return {"deleted_count": deleted_count}
+
+@router.patch(
+    "/bulk",
+    status_code=status.HTTP_200_OK,
+    summary="Bulk update DNS records",
+)
+def bulk_update_records(
+    zone_id: str,
+    payload: DnsRecordBulkUpdate,
+    db: DbDep,
+    current_user: CurrentUserDep,
+) -> dict:
+    zone = _get_zone_or_404(db, zone_id, current_user.id)
+    update_data = payload.updates.model_dump(exclude_unset=True)
+    if not update_data:
+        return {"updated_count": 0}
+        
+    updated_count = ZoneService.bulk_update_records(
+        db, 
+        zone, 
+        update_data, 
+        record_ids=payload.record_ids, 
+        update_all=payload.all
+    )
+    return {"updated_count": updated_count}
 
 
 @router.post(
@@ -163,12 +189,21 @@ def export_zone_file(
     db: DbDep,
     current_user: CurrentUserDep,
     format: str = Query("json", regex="^(json|bind)$", description="Format to export: json or bind"),
+    record_ids: str | None = Query(None, description="Comma-separated list of record IDs to export"),
 ):
+    import app.models.dns_record
     zone = _get_zone_or_404(db, zone_id, current_user.id)
+    record_ids_list = None
+    if record_ids:
+        record_ids_list = [rid.strip() for rid in record_ids.split(",") if rid.strip()]
+        
+    query = ZoneService.list_records(db, zone_id)
+    if record_ids_list:
+        query = query.filter(app.models.dns_record.DnsRecord.id.in_(record_ids_list))
+    
+    records = query.all()
     
     if format == "json":
-        query = ZoneService.list_records(db, zone_id)
-        records = query.all()
         return [DnsRecordPublic.model_validate(r).model_dump(mode="json") for r in records]
         
     # BIND format

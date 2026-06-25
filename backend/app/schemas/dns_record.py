@@ -192,7 +192,16 @@ class DnsRecordList(BaseModel):
 
 
 class DnsRecordBulkDelete(BaseModel):
-    record_ids: list[str]
+    record_ids: list[str] | None = None
+    all: bool = False
+
+class DnsRecordBulkUpdateUpdates(BaseModel):
+    ttl: int | None = Field(default=None, ge=0, le=2_147_483_647)
+
+class DnsRecordBulkUpdate(BaseModel):
+    record_ids: list[str] | None = None
+    all: bool = False
+    updates: DnsRecordBulkUpdateUpdates
 
 
 class ImportResponse(BaseModel):

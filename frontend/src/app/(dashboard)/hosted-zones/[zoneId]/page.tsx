@@ -8,12 +8,14 @@ import {
   useUpdateRecord,
   useDeleteRecord,
   useBulkDeleteRecords,
+  useBulkUpdateRecords,
 } from "@/lib/hooks/use-dns-records";
 import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { useZone, useDeleteZone } from "@/lib/hooks/use-hosted-zones";
 import { RecordsTable } from "@/components/dns-records/records-table";
 import { RecordModal } from "@/components/dns-records/record-modal";
 import { ImportModal } from "@/components/dns-records/import-modal";
+import { BulkEditModal } from "@/components/dns-records/bulk-edit-modal";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -84,6 +86,7 @@ export default function ZoneDetailPage({
   const updateRecordMutation = useUpdateRecord(zoneId);
   const deleteRecordMutation = useDeleteRecord(zoneId);
   const bulkDeleteMutation = useBulkDeleteRecords(zoneId);
+  const bulkUpdateMutation = useBulkUpdateRecords(zoneId);
 
   // Modal States
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
@@ -92,6 +95,16 @@ export default function ZoneDetailPage({
   
   const [deleteRecordModalOpen, setDeleteRecordModalOpen] = useState(false);
   const [recordsToDelete, setRecordsToDelete] = useState<string[]>([]);
+  
+  const [rowSelection, setRowSelection] = useState<any>({});
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  
+  const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+  const [recordsToUpdate, setRecordsToUpdate] = useState<string[]>([]);
+  
+  const [isDeleteAll, setIsDeleteAll] = useState(false);
+  const [isUpdateAll, setIsUpdateAll] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Handlers
   const handleCreateClick = () => {
@@ -124,25 +137,55 @@ export default function ZoneDetailPage({
     setDeleteRecordModalOpen(true);
   };
 
-  const handleDeleteSelected = (ids: string[]) => {
+  const handleDeleteSelected = (ids: string[], isAll: boolean) => {
     setRecordsToDelete(ids);
+    setIsDeleteAll(isAll);
     setDeleteRecordModalOpen(true);
+  };
+  
+  const handleBulkEditTtl = (ids: string[], isAll: boolean) => {
+    setRecordsToUpdate(ids);
+    setIsUpdateAll(isAll);
+    setIsBulkEditModalOpen(true);
+  };
+  
+  const confirmBulkUpdateTtl = async (ttl: number) => {
+    try {
+      await bulkUpdateMutation.mutateAsync({ ids: recordsToUpdate, isAll: isUpdateAll, updates: { ttl } });
+      setRowSelection({});
+      setIsAllSelected(false);
+    } catch (err) {
+      // Handled by hook
+    }
   };
 
   const confirmDeleteRecords = async () => {
     try {
-      if (recordsToDelete.length > 1) {
-        // Fallback to Promise.all if bulk delete isn't implemented on backend, 
-        // but we have a bulkDeleteMutation assuming it exists. 
-        // To be safe, we will just use the mutation.
-        await bulkDeleteMutation.mutateAsync(recordsToDelete);
+      if (isDeleteAll || recordsToDelete.length > 1) {
+        if (!isDeleteAll && recordsToDelete.length >= 10) {
+          // Chunk deletion to show progress
+          setDeleteProgress({ current: 0, total: recordsToDelete.length });
+          const chunkSize = 5;
+          for (let i = 0; i < recordsToDelete.length; i += chunkSize) {
+            const chunk = recordsToDelete.slice(i, i + chunkSize);
+            await bulkDeleteMutation.mutateAsync({ ids: chunk, isAll: false });
+            setDeleteProgress({ current: Math.min(i + chunkSize, recordsToDelete.length), total: recordsToDelete.length });
+          }
+        } else {
+          await bulkDeleteMutation.mutateAsync({ ids: recordsToDelete, isAll: isDeleteAll });
+        }
       } else if (recordsToDelete.length === 1) {
         await deleteRecordMutation.mutateAsync(recordsToDelete[0]);
       }
-      toast.success(`Deleted ${recordsToDelete.length} record(s)`);
+      
+      toast.success(`Deleted ${isDeleteAll ? "all" : recordsToDelete.length} record(s)`);
       setDeleteRecordModalOpen(false);
+      setDeleteProgress(null);
+      setRowSelection({});
+      setIsAllSelected(false);
     } catch (error: any) {
       toast.error(error.message || "Failed to delete record(s)");
+      setDeleteProgress(null);
     }
   };
 
@@ -272,12 +315,12 @@ export default function ZoneDetailPage({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "json")} download>
+                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "json", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[])} download>
                         Export as JSON
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "bind")} download>
+                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "bind", isAllSelected ? [] : Object.keys(rowSelection).map(idx => recordsData?.records[parseInt(idx, 10)]?.id).filter(Boolean) as string[])} download>
                         Export as BIND zone file
                       </a>
                     </DropdownMenuItem>
@@ -321,6 +364,12 @@ export default function ZoneDetailPage({
                 onEdit={handleEditClick}
                 onDeleteSelected={handleDeleteSelected}
                 onDeleteSingle={handleDeleteSingle}
+                totalItems={totalItems}
+                isAllSelected={isAllSelected}
+                setIsAllSelected={setIsAllSelected}
+                rowSelection={rowSelection}
+                setRowSelection={setRowSelection}
+                onBulkEditTtl={handleBulkEditTtl}
               />
             </div>
 
@@ -402,16 +451,39 @@ export default function ZoneDetailPage({
         zoneId={zoneId}
       />
 
+      {/* Bulk Edit Modal */}
+      <BulkEditModal
+        isOpen={isBulkEditModalOpen}
+        onClose={() => setIsBulkEditModalOpen(false)}
+        selectedCount={recordsToUpdate.length}
+        isAllSelected={isUpdateAll}
+        totalRecords={totalItems}
+        onConfirm={confirmBulkUpdateTtl}
+        isLoading={bulkUpdateMutation.isPending}
+      />
+
       {/* Delete Record Modal */}
       <ConfirmModal
         isOpen={deleteRecordModalOpen}
         onClose={() => setDeleteRecordModalOpen(false)}
-        title={`Delete record${recordsToDelete.length > 1 ? "s" : ""}`}
+        title={`Delete record${isDeleteAll || recordsToDelete.length > 1 ? "s" : ""}`}
         message={
-          <>
-            Are you sure you want to delete {recordsToDelete.length === 1 ? "this record" : `these ${recordsToDelete.length} records`}? 
-            This action cannot be undone and may impact traffic to your resources.
-          </>
+          deleteProgress ? (
+            <div className="space-y-2">
+              <p>Deleting {deleteProgress.current} of {deleteProgress.total} records...</p>
+              <div className="w-full bg-slate-200 rounded-full h-2.5">
+                <div 
+                  className="bg-orange-600 h-2.5 rounded-full transition-all duration-300" 
+                  style={{ width: `${(deleteProgress.current / deleteProgress.total) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          ) : (
+            <>
+              Are you sure you want to delete {isDeleteAll ? `all ${totalItems} records` : (recordsToDelete.length === 1 ? "this record" : `these ${recordsToDelete.length} records`)}? 
+              This action cannot be undone and may impact traffic to your resources.
+            </>
+          )
         }
         onConfirm={confirmDeleteRecords}
         isLoading={deleteRecordMutation.isPending || bulkDeleteMutation.isPending}

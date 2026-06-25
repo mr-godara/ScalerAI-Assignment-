@@ -20,8 +20,14 @@ interface RecordsTableProps {
   isLoading: boolean;
   zoneName: string;
   onEdit: (record: DNSRecord) => void;
-  onDeleteSelected: (ids: string[]) => void;
+  onDeleteSelected: (ids: string[], isAll: boolean) => void;
   onDeleteSingle: (id: string) => void;
+  totalItems: number;
+  isAllSelected: boolean;
+  setIsAllSelected: (v: boolean) => void;
+  rowSelection: RowSelectionState;
+  setRowSelection: (updater: any) => void;
+  onBulkEditTtl: (ids: string[], isAll: boolean) => void;
 }
 
 export function RecordsTable({
@@ -31,8 +37,13 @@ export function RecordsTable({
   onEdit,
   onDeleteSelected,
   onDeleteSingle,
+  totalItems,
+  isAllSelected,
+  setIsAllSelected,
+  rowSelection,
+  setRowSelection,
+  onBulkEditTtl,
 }: RecordsTableProps) {
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   const toggleRowExpanded = (id: string) => {
@@ -42,14 +53,20 @@ export function RecordsTable({
   const columns: ColumnDef<DNSRecord>[] = [
     {
       id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-          className="translate-y-[2px]"
-        />
-      ),
+      header: ({ table }) => {
+        const isAllPageSelected = table.getIsAllPageRowsSelected();
+        return (
+          <Checkbox
+            checked={isAllPageSelected}
+            onCheckedChange={(value) => {
+              table.toggleAllPageRowsSelected(!!value);
+              if (!value) setIsAllSelected(false);
+            }}
+            aria-label="Select all"
+            className="translate-y-[2px]"
+          />
+        );
+      },
       cell: ({ row }) => {
         const isProtected = row.original.type === "NS" || row.original.type === "SOA";
         return isProtected ? (
@@ -205,24 +222,58 @@ export function RecordsTable({
   return (
     <div className="space-y-4">
       {/* Sticky Bulk Action Bar */}
-      {Object.keys(rowSelection).length > 0 && (
+      {/* Select All Banner */}
+      {Object.keys(rowSelection).length === data.length && data.length < totalItems && !isAllSelected && (
+        <div className="flex items-center justify-center p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-slate-700">
+          All {data.length} records on this page are selected. 
+          <Button variant="link" className="px-2" onClick={() => setIsAllSelected(true)}>
+            Select all {totalItems} records in zone
+          </Button>
+        </div>
+      )}
+      {isAllSelected && (
+        <div className="flex items-center justify-center p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-slate-700">
+          All {totalItems} records in the zone are selected.
+          <Button variant="link" className="px-2" onClick={() => {
+            setIsAllSelected(false);
+            setRowSelection({});
+          }}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
+      {/* Sticky Bulk Action Bar */}
+      {(Object.keys(rowSelection).length > 0 || isAllSelected) && (
         <div className="sticky top-0 z-10 flex items-center gap-4 p-2 bg-blue-50 border border-blue-200 rounded-md">
           <Badge variant="outline" className="bg-white border-blue-300 text-blue-700">
-            {Object.keys(rowSelection).length} selected
+            {isAllSelected ? totalItems : Object.keys(rowSelection).length} selected
           </Badge>
+          <Button
+            id="bulk-edit-ttl-btn"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const selectedIds = isAllSelected ? [] : Object.keys(rowSelection).map(
+                (index) => data[parseInt(index, 10)].id
+              );
+              onBulkEditTtl(selectedIds, isAllSelected);
+            }}
+          >
+            Edit TTL
+          </Button>
           <Button
             id="bulk-delete-btn"
             variant="destructive"
             size="sm"
             onClick={() => {
-              const selectedIds = Object.keys(rowSelection).map(
+              const selectedIds = isAllSelected ? [] : Object.keys(rowSelection).map(
                 (index) => data[parseInt(index, 10)].id
               );
-              onDeleteSelected(selectedIds);
-              setRowSelection({});
+              onDeleteSelected(selectedIds, isAllSelected);
             }}
           >
-            Delete {Object.keys(rowSelection).length} records
+            Delete {isAllSelected ? totalItems : Object.keys(rowSelection).length} records
           </Button>
         </div>
       )}

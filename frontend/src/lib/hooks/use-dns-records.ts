@@ -58,16 +58,33 @@ export const useDeleteRecord = (zoneId: string) => {
 export const useBulkDeleteRecords = (zoneId: string) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (ids: string[]) => dnsRecordsApi.bulkDeleteRecords(zoneId, ids),
+    mutationFn: ({ ids, isAll }: { ids: string[] | null; isAll: boolean }) =>
+      dnsRecordsApi.bulkDeleteRecords(zoneId, ids, isAll),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
       toast.success("Records deleted");
     },
     onError: (error: any) => {
-      toast.error(error);
+      toast.error(error.message || "Failed to delete records");
     },
   });
 };
+
+export const useBulkUpdateRecords = (zoneId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ids, isAll, updates }: { ids: string[] | null; isAll: boolean; updates: { ttl?: number } }) =>
+      dnsRecordsApi.bulkUpdateRecords(zoneId, ids, isAll, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
+      toast.success("Records updated");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update records");
+    },
+  });
+};
+
 
 export const useImportZoneFile = (zoneId: string) => {
   const queryClient = useQueryClient();

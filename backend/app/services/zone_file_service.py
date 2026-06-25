@@ -6,7 +6,7 @@ import dns.rdatatype
 
 from sqlalchemy.orm import Session
 from app.models.hosted_zone import HostedZone
-from app.models.dns_record import RecordType, RoutingPolicy
+from app.models.dns_record import DnsRecord, RecordType, RoutingPolicy
 from app.schemas.dns_record import DnsRecordCreate
 from app.services.zone_service import ZoneService
 
@@ -68,8 +68,11 @@ class ZoneFileService:
         return imported, skipped, errors
 
     @staticmethod
-    def generate_zone_file(db: Session, zone: HostedZone) -> str:
+    def generate_zone_file(db: Session, zone: HostedZone, record_ids: list[str] | None = None) -> str:
         records_query = ZoneService.list_records(db, zone.id)
+        if record_ids is not None:
+            records_query = records_query.filter(DnsRecord.id.in_(record_ids))
+            
         records = records_query.all()
 
         lines = [f"$ORIGIN {zone.name}"]

@@ -20,9 +20,15 @@ export const dnsRecordsApi = {
   deleteRecord: (zoneId: string, recordId: string) => {
     return api.delete<void>(`/hosted-zones/${zoneId}/records/${recordId}`);
   },
-  bulkDeleteRecords: (zoneId: string, ids: string[]) => {
-    // Assuming backend supports bulk delete via a POST or DELETE with body.
-    return api.post<{ deleted: number }>(`/hosted-zones/${zoneId}/records/bulk-delete`, { ids });
+  bulkDeleteRecords: (zoneId: string, ids: string[] | null, isAll: boolean = false) => {
+    return api.post<{ deleted: number }>(`/hosted-zones/${zoneId}/records/bulk-delete`, { record_ids: ids, all: isAll });
+  },
+  bulkUpdateRecords: (zoneId: string, ids: string[] | null, isAll: boolean, updates: { ttl?: number }) => {
+    return api.patch<{ updated_count: number }>(`/hosted-zones/${zoneId}/records/bulk`, {
+      record_ids: ids,
+      all: isAll,
+      updates
+    });
   },
   importZoneFile: (zoneId: string, file: File) => {
     const formData = new FormData();
@@ -33,7 +39,11 @@ export const dnsRecordsApi = {
       },
     });
   },
-  exportZoneFileUrl: (zoneId: string, format: "bind" | "json") => {
-    return `${process.env.NEXT_PUBLIC_API_URL}/api/v1/hosted-zones/${zoneId}/records/export?format=${format}`;
+  exportZoneFileUrl: (zoneId: string, format: "bind" | "json", recordIds?: string[]) => {
+    let url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/hosted-zones/${zoneId}/records/export?format=${format}`;
+    if (recordIds && recordIds.length > 0) {
+      url += `&record_ids=${recordIds.join(",")}`;
+    }
+    return url;
   },
 };
