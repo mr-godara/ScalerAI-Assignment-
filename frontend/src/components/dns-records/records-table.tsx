@@ -10,7 +10,10 @@ import { DataTable } from "@/components/common/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Lock } from "lucide-react";
+import { Edit, Trash2, ArrowUpDown, ChevronDown, ChevronRight, Lock, FileText } from "lucide-react";
+import { EmptyState } from "@/components/common/empty-state";
+import { CopyButton } from "@/components/common/copy-button";
+import { StatusBadge } from "@/components/common/status-badge";
 
 interface RecordsTableProps {
   data: DNSRecord[];
@@ -34,23 +37,6 @@ export function RecordsTable({
 
   const toggleRowExpanded = (id: string) => {
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "A": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "AAAA": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "CNAME": return "bg-teal-100 text-teal-800 border-teal-200";
-      case "TXT": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "MX": return "bg-orange-100 text-orange-800 border-orange-200";
-      case "NS":
-      case "SOA":
-      case "PTR":
-      case "SRV":
-      case "CAA":
-        return "bg-slate-100 text-slate-800 border-slate-200";
-      default: return "bg-slate-100 text-slate-800";
-    }
   };
 
   const columns: ColumnDef<DNSRecord>[] = [
@@ -138,9 +124,7 @@ export function RecordsTable({
       cell: ({ row }) => {
         const type = row.getValue("type") as string;
         return (
-          <Badge variant="outline" className={getTypeColor(type)}>
-            {type}
-          </Badge>
+          <StatusBadge variant="record-type" type={type} />
         );
       },
     },
@@ -276,22 +260,22 @@ export function RecordsTable({
                 <Button variant="outline" size="sm" onClick={() => onEdit(record)}>
                   Edit record
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => {
-                  navigator.clipboard.writeText(`arn:aws:route53:::hostedzone/${record.zone_id}/recordset/${record.id}`);
-                }}>
-                  Copy ARN
-                </Button>
+                <CopyButton 
+                  value={`arn:aws:route53:::hostedzone/${record.zone_id}/recordset/${record.id}`} 
+                  variant="outline" 
+                  size="sm" 
+                  showText 
+                />
               </div>
             </div>
           );
         }}
         emptyState={
-          <div className="flex flex-col items-center justify-center py-10 space-y-4">
-            <div className="text-slate-400">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            </div>
-            <p className="text-slate-500 text-lg">No records found</p>
-          </div>
+          <EmptyState
+            title="No records found"
+            description="No DNS records match your filter criteria or this hosted zone is empty."
+            icon={FileText}
+          />
         }
       />
     </div>

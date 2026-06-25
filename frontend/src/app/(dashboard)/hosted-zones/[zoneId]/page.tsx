@@ -21,20 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmModal } from "@/components/common/confirm-modal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { DNSRecord } from "@/types/api";
 import Link from "next/link";
+import { CopyButton } from "@/components/common/copy-button";
 
 export default function ZoneDetailPage({
   params,
@@ -187,8 +181,9 @@ export default function ZoneDetailPage({
             <Badge variant="secondary" className={zone.type === "PUBLIC" ? "bg-green-100 text-green-800" : "bg-slate-100"}>
               {zone.type === "PUBLIC" ? "Public" : "Private"}
             </Badge>
-            <Badge variant="outline" className="text-slate-600 bg-slate-50 font-mono">
+            <Badge variant="outline" className="text-slate-600 bg-slate-50 font-mono flex items-center">
               {zone.id}
+              <CopyButton value={zone.id} className="ml-1 h-5 w-5" />
             </Badge>
             <span className="text-sm text-slate-500">
               {zone.record_count} records
@@ -352,54 +347,34 @@ export default function ZoneDetailPage({
       />
 
       {/* Delete Record Modal */}
-      <Dialog open={deleteRecordModalOpen} onOpenChange={setDeleteRecordModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete record{recordsToDelete.length > 1 ? "s" : ""}</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {recordsToDelete.length === 1 ? "this record" : `these ${recordsToDelete.length} records`}? 
-              This action cannot be undone and may impact traffic to your resources.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteRecordModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDeleteRecords}
-              disabled={deleteRecordMutation.isPending || bulkDeleteMutation.isPending}
-            >
-              {deleteRecordMutation.isPending || bulkDeleteMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmModal
+        isOpen={deleteRecordModalOpen}
+        onClose={() => setDeleteRecordModalOpen(false)}
+        title={`Delete record${recordsToDelete.length > 1 ? "s" : ""}`}
+        message={
+          <>
+            Are you sure you want to delete {recordsToDelete.length === 1 ? "this record" : `these ${recordsToDelete.length} records`}? 
+            This action cannot be undone and may impact traffic to your resources.
+          </>
+        }
+        onConfirm={confirmDeleteRecords}
+        isLoading={deleteRecordMutation.isPending || bulkDeleteMutation.isPending}
+      />
 
       {/* Delete Zone Modal */}
-      <Dialog open={deleteZoneModalOpen} onOpenChange={setDeleteZoneModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete hosted zone</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete <strong>{zone.name}</strong>? 
-              This action cannot be undone. All custom DNS records must be deleted first.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteZoneModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDeleteZone}
-              disabled={deleteZoneMutation.isPending}
-            >
-              {deleteZoneMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmModal
+        isOpen={deleteZoneModalOpen}
+        onClose={() => setDeleteZoneModalOpen(false)}
+        title="Delete hosted zone"
+        message={
+          <>
+            Are you sure you want to delete <strong>{zone.name}</strong>? 
+            This action cannot be undone. All custom DNS records must be deleted first.
+          </>
+        }
+        onConfirm={confirmDeleteZone}
+        isLoading={deleteZoneMutation.isPending}
+      />
     </div>
   );
 }

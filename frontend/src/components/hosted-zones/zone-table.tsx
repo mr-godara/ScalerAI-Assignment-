@@ -10,9 +10,11 @@ import { DataTable } from "@/components/common/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2, ArrowUpDown } from "lucide-react";
+import { Eye, Trash2, ArrowUpDown, Globe } from "lucide-react";
 import Link from "next/link";
+import { StatusBadge } from "@/components/common/status-badge";
 import { formatDistanceToNow } from "date-fns";
+import { EmptyState } from "@/components/common/empty-state";
 
 interface ZoneTableProps {
   data: HostedZone[];
@@ -94,16 +96,7 @@ export function ZoneTable({
       cell: ({ row }) => {
         const type = row.getValue("type") as string;
         return (
-          <Badge
-            variant="secondary"
-            className={
-              type === "PUBLIC"
-                ? "bg-green-100 text-green-800"
-                : "bg-gray-100 text-gray-800"
-            }
-          >
-            {type === "PUBLIC" ? "Public" : "Private"}
-          </Badge>
+          <StatusBadge variant={type === "PUBLIC" ? "public" : "private"} />
         );
       },
     },
@@ -228,15 +221,11 @@ export function ZoneTable({
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
         emptyState={
-          <div className="flex flex-col items-center justify-center py-10 space-y-4">
-            <div className="text-gray-400">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-            </div>
-            <p className="text-gray-500 text-lg">No hosted zones</p>
-            <Button asChild className="bg-orange-600 hover:bg-orange-700 text-white">
-              <Link href="/hosted-zones/new">Create hosted zone</Link>
-            </Button>
-          </div>
+          <EmptyState
+            title="No hosted zones"
+            description="You haven't created any hosted zones yet. Create a hosted zone to start routing traffic for your domain."
+            icon={Globe}
+          />
         }
       />
     </div>

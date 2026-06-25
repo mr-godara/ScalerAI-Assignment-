@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonTable } from "./skeleton-table";
 import React from "react";
 
 interface DataTableProps<TData, TValue> {
@@ -87,15 +88,11 @@ export function DataTable<TData, TValue>({
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i} className="border-slate-200">
-                {columns.map((_, j) => (
-                  <TableCell key={j} className="p-4">
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            <TableRow>
+              <TableCell colSpan={columns.length} className="p-0">
+                <SkeletonTable columns={columns.length} rows={5} />
+              </TableCell>
+            </TableRow>
           ) : table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
               <React.Fragment key={row.id}>

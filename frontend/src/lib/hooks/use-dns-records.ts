@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dnsRecordsApi } from "../api/dns-records";
+import { toast } from "../toast";
 import { DNSRecord, RecordListParams } from "@/types/api";
 
 export const useRecords = (zoneId: string, params?: RecordListParams) => {
@@ -17,6 +18,10 @@ export const useCreateRecord = (zoneId: string) => {
     mutationFn: (data: Partial<DNSRecord>) => dnsRecordsApi.createRecord(zoneId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
+      toast.success("Record created successfully");
+    },
+    onError: (error) => {
+      toast.error(error);
     },
   });
 };
@@ -28,6 +33,10 @@ export const useUpdateRecord = (zoneId: string) => {
       dnsRecordsApi.updateRecord(zoneId, recordId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
+      toast.success("Record saved");
+    },
+    onError: (error) => {
+      toast.error(error);
     },
   });
 };
@@ -38,6 +47,10 @@ export const useDeleteRecord = (zoneId: string) => {
     mutationFn: (recordId: string) => dnsRecordsApi.deleteRecord(zoneId, recordId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
+      toast.success("Record deleted");
+    },
+    onError: (error) => {
+      toast.error(error);
     },
   });
 };
@@ -48,6 +61,10 @@ export const useBulkDeleteRecords = (zoneId: string) => {
     mutationFn: (ids: string[]) => dnsRecordsApi.bulkDeleteRecords(zoneId, ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
+      toast.success("Records deleted");
+    },
+    onError: (error) => {
+      toast.error(error);
     },
   });
 };

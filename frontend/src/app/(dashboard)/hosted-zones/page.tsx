@@ -12,14 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmModal } from "@/components/common/confirm-modal";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -205,29 +198,19 @@ export default function HostedZonesPage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete hosted zone</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {zonesToDelete.length === 1 ? "this hosted zone" : `these ${zonesToDelete.length} hosted zones`}? 
-              This action cannot be undone. All associated DNS records must be deleted first.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={deleteZoneMutation.isPending}
-            >
-              {deleteZoneMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete hosted zone"
+        message={
+          <>
+            Are you sure you want to delete {zonesToDelete.length === 1 ? "this hosted zone" : `these ${zonesToDelete.length} hosted zones`}? 
+            This action cannot be undone. All associated DNS records must be deleted first.
+          </>
+        }
+        onConfirm={confirmDelete}
+        isLoading={deleteZoneMutation.isPending}
+      />
     </div>
   );
 }

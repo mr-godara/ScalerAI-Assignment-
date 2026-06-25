@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { hostedZonesApi } from "../api/hosted-zones";
+import { toast } from "../toast";
 import { HostedZone, ZoneListParams } from "@/types/api";
 
 export const useZones = (params?: ZoneListParams) => {
@@ -22,8 +23,12 @@ export const useCreateZone = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: hostedZonesApi.createZone,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["hostedZones"] });
+      toast.success("Hosted zone created", data.name);
+    },
+    onError: (error) => {
+      toast.error(error);
     },
   });
 };
@@ -36,6 +41,10 @@ export const useUpdateZone = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["hostedZones"] });
       queryClient.invalidateQueries({ queryKey: ["hostedZone", variables.id] });
+      toast.success("Hosted zone updated");
+    },
+    onError: (error) => {
+      toast.error(error);
     },
   });
 };
@@ -46,6 +55,10 @@ export const useDeleteZone = () => {
     mutationFn: hostedZonesApi.deleteZone,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hostedZones"] });
+      toast.success("Hosted zone deleted");
+    },
+    onError: (error) => {
+      toast.error(error);
     },
   });
 };

@@ -3,7 +3,12 @@
 import { DNSRecord } from "@/types/api";
 import { formatRecordValue } from "@/lib/utils";
 
-export function RecordTable({ records, zoneId }: { records: DNSRecord[], zoneId: string }) {
+import { SkeletonTable } from "../common/skeleton-table";
+
+export function RecordTable({ records, zoneId, isLoading }: { records: DNSRecord[], zoneId: string, isLoading?: boolean }) {
+  if (isLoading) {
+    return <SkeletonTable columns={5} rows={5} />;
+  }
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm text-aws-text">
