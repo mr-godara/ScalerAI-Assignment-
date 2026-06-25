@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: route53-backend
+    env: python
+    region: ohio
+    buildCommand: "cd backend && pip install -r requirements.txt && alembic upgrade head && python -m app.seed"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        value: "sqlite:////data/route53.db"
+      - key: ALLOWED_ORIGINS
+        value: '["*"]' # Allow Vercel frontend to communicate with this backend
+      - key: SECRET_KEY
+        generateValue: true # Render will automatically generate a secure 256-bit key
+      - key: ENVIRONMENT
+        value: "production"
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
