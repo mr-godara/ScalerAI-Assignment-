@@ -10,6 +10,7 @@ import {
   useReactTable,
   RowSelectionState,
   OnChangeFn,
+  Row,
 } from "@tanstack/react-table";
 
 import {
@@ -21,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -29,6 +31,9 @@ interface DataTableProps<TData, TValue> {
   emptyState?: React.ReactNode;
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  renderSubComponent?: (props: { row: Row<TData> }) => React.ReactElement;
+  getRowCanExpand?: (row: Row<TData>) => boolean;
+  expanded?: Record<string, boolean>;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,6 +43,9 @@ export function DataTable<TData, TValue>({
   emptyState,
   rowSelection,
   onRowSelectionChange,
+  renderSubComponent,
+  getRowCanExpand,
+  expanded = {},
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -47,9 +55,11 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
+    getRowCanExpand,
     state: {
       rowSelection,
       sorting,
+      expanded,
     },
     onRowSelectionChange,
   });
@@ -88,17 +98,25 @@ export function DataTable<TData, TValue>({
             ))
           ) : table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-                className="group hover:bg-blue-50 border-b border-slate-200 last:border-b-0 transition-colors"
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="p-4 text-sm text-slate-900">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
+              <React.Fragment key={row.id}>
+                <TableRow
+                  data-state={row.getIsSelected() && "selected"}
+                  className="group hover:bg-blue-50 border-b border-slate-200 transition-colors"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="p-4 text-sm text-slate-900">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {row.getIsExpanded() && renderSubComponent && (
+                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                    <TableCell colSpan={row.getVisibleCells().length} className="p-0 border-b border-slate-200">
+                      {renderSubComponent({ row })}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </React.Fragment>
             ))
           ) : (
             <TableRow>

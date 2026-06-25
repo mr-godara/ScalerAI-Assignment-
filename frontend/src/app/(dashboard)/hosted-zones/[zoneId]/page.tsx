@@ -1,37 +1,405 @@
 "use client";
 
-import { useZone } from "@/lib/hooks/use-hosted-zones";
-import { useRecords } from "@/lib/hooks/use-dns-records";
-import { RecordTable } from "@/components/dns-records/record-table";
-import { useParams } from "next/navigation";
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import {
+  useRecords,
+  useCreateRecord,
+  useUpdateRecord,
+  useDeleteRecord,
+  useBulkDeleteRecords,
+} from "@/lib/hooks/use-dns-records";
+import { useZone, useDeleteZone } from "@/lib/hooks/use-hosted-zones";
+import { RecordsTable } from "@/components/dns-records/records-table";
+import { RecordModal } from "@/components/dns-records/record-modal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import { DNSRecord } from "@/types/api";
+import Link from "next/link";
 
-export default function HostedZoneDetailPage() {
-  const { zoneId } = useParams() as { zoneId: string };
-  const { data: zone, isLoading: zoneLoading } = useZone(zoneId);
-  const { data: recordsData, isLoading: recordsLoading } = useRecords(zoneId);
-  const records = recordsData?.items || [];
+export default function ZoneDetailPage({
+  params,
+}: {
+  params: Promise<{ zoneId: string }>;
+}) {
+  const router = useRouter();
+  const { zoneId } = use(params);
+
+  // Zone Data
+  const { data: zone, isLoading: isZoneLoading } = useZone(zoneId);
+  const deleteZoneMutation = useDeleteZone();
+  const [deleteZoneModalOpen, setDeleteZoneModalOpen] = useState(false);
+
+  // Records Data
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("any");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleTypeChange = (value: string) => {
+    setTypeFilter(value);
+    setPage(1);
+  };
+
+  const { data: recordsData, isLoading: isRecordsLoading } = useRecords(zoneId, {
+    page,
+    page_size: pageSize,
+    search: debouncedSearch || undefined,
+    type: typeFilter !== "any" ? typeFilter : undefined,
+  });
+
+  // Mutations
+  const createRecordMutation = useCreateRecord(zoneId);
+  const updateRecordMutation = useUpdateRecord(zoneId);
+  const deleteRecordMutation = useDeleteRecord(zoneId);
+  const bulkDeleteMutation = useBulkDeleteRecords(zoneId);
+
+  // Modal States
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<DNSRecord | undefined>(undefined);
+  
+  const [deleteRecordModalOpen, setDeleteRecordModalOpen] = useState(false);
+  const [recordsToDelete, setRecordsToDelete] = useState<string[]>([]);
+
+  // Handlers
+  const handleCreateClick = () => {
+    setEditingRecord(undefined);
+    setIsRecordModalOpen(true);
+  };
+
+  const handleEditClick = (record: DNSRecord) => {
+    setEditingRecord(record);
+    setIsRecordModalOpen(true);
+  };
+
+  const handleRecordSubmit = async (data: Partial<DNSRecord>) => {
+    try {
+      if (editingRecord) {
+        await updateRecordMutation.mutateAsync({ recordId: editingRecord.id, data });
+        toast.success("Record updated successfully");
+      } else {
+        await createRecordMutation.mutateAsync(data);
+        toast.success("Record created successfully");
+      }
+      setIsRecordModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save record");
+    }
+  };
+
+  const handleDeleteSingle = (id: string) => {
+    setRecordsToDelete([id]);
+    setDeleteRecordModalOpen(true);
+  };
+
+  const handleDeleteSelected = (ids: string[]) => {
+    setRecordsToDelete(ids);
+    setDeleteRecordModalOpen(true);
+  };
+
+  const confirmDeleteRecords = async () => {
+    try {
+      if (recordsToDelete.length > 1) {
+        // Fallback to Promise.all if bulk delete isn't implemented on backend, 
+        // but we have a bulkDeleteMutation assuming it exists. 
+        // To be safe, we will just use the mutation.
+        await bulkDeleteMutation.mutateAsync(recordsToDelete);
+      } else if (recordsToDelete.length === 1) {
+        await deleteRecordMutation.mutateAsync(recordsToDelete[0]);
+      }
+      toast.success(`Deleted ${recordsToDelete.length} record(s)`);
+      setDeleteRecordModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete record(s)");
+    }
+  };
+
+  const confirmDeleteZone = async () => {
+    try {
+      await deleteZoneMutation.mutateAsync(zoneId);
+      toast.success("Hosted zone deleted successfully");
+      router.push("/hosted-zones");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete hosted zone");
+      setDeleteZoneModalOpen(false);
+    }
+  };
+
+  const totalItems = recordsData?.total || 0;
+  const totalPages = recordsData?.total_pages || 1;
+  const startItem = (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalItems);
+
+  if (isZoneLoading) {
+    return <div className="p-8 text-slate-500">Loading hosted zone details...</div>;
+  }
+
+  if (!zone) {
+    return <div className="p-8 text-red-500">Hosted zone not found.</div>;
+  }
 
   return (
-    <div className="p-0">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-aws-text">{zone?.name || "Hosted zone details"}</h1>
+    <div className="p-8 max-w-[1600px] mx-auto space-y-6">
+      {/* Breadcrumb */}
+      <div className="text-sm text-blue-600 hover:underline mb-4">
+        <Link href="/hosted-zones">Hosted zones</Link>
+        <span className="text-slate-400 mx-2">&gt;</span>
+        <span className="text-slate-600">{zone.name}</span>
       </div>
 
-      <div className="bg-aws-white border border-aws-border rounded shadow-sm">
-        <div className="p-4 border-b border-aws-border bg-aws-bg flex justify-between items-center">
-          <h2 className="text-lg font-medium text-aws-text">Records</h2>
-          <button className="bg-aws-orange hover:bg-aws-orange-dark text-aws-text font-medium py-1.5 px-4 rounded text-sm transition-colors">
-            Create record
-          </button>
-        </div>
-        <div className="p-4">
-          {recordsLoading ? (
-            <div className="text-sm text-aws-text-secondary">Loading records...</div>
-          ) : (
-             <RecordTable records={records} zoneId={zoneId} />
+      {/* Zone Info Banner */}
+      <div className="bg-white rounded-md shadow-sm border border-slate-200 p-6 flex items-start justify-between">
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              {zone.name}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className={zone.type === "PUBLIC" ? "bg-green-100 text-green-800" : "bg-slate-100"}>
+              {zone.type === "PUBLIC" ? "Public" : "Private"}
+            </Badge>
+            <Badge variant="outline" className="text-slate-600 bg-slate-50 font-mono">
+              {zone.id}
+            </Badge>
+            <span className="text-sm text-slate-500">
+              {zone.record_count} records
+            </span>
+          </div>
+          {zone.comment && (
+            <p className="text-sm text-slate-600">{zone.comment}</p>
           )}
         </div>
+        <div className="flex gap-3">
+          <Button variant="outline">Edit</Button>
+          <Button variant="outline" onClick={() => setDeleteZoneModalOpen(true)}>
+            Delete zone
+          </Button>
+        </div>
       </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="records" className="w-full">
+        <TabsList className="bg-transparent border-b border-slate-200 w-full justify-start h-auto p-0 rounded-none space-x-6">
+          <TabsTrigger 
+            value="records"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:text-orange-600 data-[state=active]:shadow-none px-1 py-3"
+          >
+            Records
+          </TabsTrigger>
+          <TabsTrigger 
+            value="traffic"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:text-orange-600 data-[state=active]:shadow-none px-1 py-3"
+          >
+            Traffic policy instances
+          </TabsTrigger>
+          <TabsTrigger 
+            value="tags"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-orange-500 data-[state=active]:text-orange-600 data-[state=active]:shadow-none px-1 py-3"
+          >
+            Tags
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="records" className="mt-6 space-y-4">
+          <div className="bg-white rounded-md shadow-sm border border-slate-200">
+            {/* Action Bar */}
+            <div className="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Button className="bg-orange-600 hover:bg-orange-700 text-white" onClick={handleCreateClick}>
+                  Create record
+                </Button>
+                <Button variant="outline" disabled>Import zone file</Button>
+                <Button variant="outline" disabled>Export</Button>
+              </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="p-4 border-b border-slate-200 flex items-center gap-4 bg-slate-50/50">
+              <div className="relative max-w-md flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search records by name or value"
+                  className="pl-9 bg-white"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="w-[180px]">
+                <Select value={typeFilter} onValueChange={handleTypeChange}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Record type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any type</SelectItem>
+                    {["A", "AAAA", "CNAME", "TXT", "MX", "NS", "PTR", "SRV", "CAA", "SOA"].map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="p-4">
+              <RecordsTable
+                data={recordsData?.records || []}
+                isLoading={isRecordsLoading}
+                zoneName={zone.name}
+                onEdit={handleEditClick}
+                onDeleteSelected={handleDeleteSelected}
+                onDeleteSingle={handleDeleteSingle}
+              />
+            </div>
+
+            {/* Pagination */}
+            {totalItems > 0 && (
+              <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50/50 rounded-b-md">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500">Rows per page:</span>
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={(val) => {
+                      setPageSize(Number(val));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[70px] bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-6 text-sm text-slate-600">
+                  <div>
+                    Showing {startItem}-{endItem} of {totalItems}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 bg-white"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 bg-white"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        <TabsContent value="traffic" className="p-8 text-center text-slate-500 border rounded-md mt-6">
+          Traffic policy instances coming soon.
+        </TabsContent>
+        <TabsContent value="tags" className="p-8 text-center text-slate-500 border rounded-md mt-6">
+          Tags management coming soon.
+        </TabsContent>
+      </Tabs>
+
+      {/* Record Modal */}
+      <RecordModal
+        isOpen={isRecordModalOpen}
+        onClose={() => setIsRecordModalOpen(false)}
+        zoneName={zone.name}
+        initialData={editingRecord}
+        onSubmit={handleRecordSubmit}
+        isLoading={createRecordMutation.isPending || updateRecordMutation.isPending}
+      />
+
+      {/* Delete Record Modal */}
+      <Dialog open={deleteRecordModalOpen} onOpenChange={setDeleteRecordModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete record{recordsToDelete.length > 1 ? "s" : ""}</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {recordsToDelete.length === 1 ? "this record" : `these ${recordsToDelete.length} records`}? 
+              This action cannot be undone and may impact traffic to your resources.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteRecordModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteRecords}
+              disabled={deleteRecordMutation.isPending || bulkDeleteMutation.isPending}
+            >
+              {deleteRecordMutation.isPending || bulkDeleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Zone Modal */}
+      <Dialog open={deleteZoneModalOpen} onOpenChange={setDeleteZoneModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete hosted zone</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{zone.name}</strong>? 
+              This action cannot be undone. All custom DNS records must be deleted first.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteZoneModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteZone}
+              disabled={deleteZoneMutation.isPending}
+            >
+              {deleteZoneMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
