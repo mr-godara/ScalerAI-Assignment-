@@ -2,6 +2,15 @@
 
 > A functional clone of AWS Route53 built with FastAPI + Next.js
 
+## 🌍 Live Demo
+- **Frontend App:** [https://scaler-ai-assignment-nine.vercel.app](https://scaler-ai-assignment-nine.vercel.app)
+- **Backend API:** [https://scalerai-assignment-backend.onrender.com](https://scalerai-assignment-backend.onrender.com)
+- **API Swagger Docs:** [https://scalerai-assignment-backend.onrender.com/docs](https://scalerai-assignment-backend.onrender.com/docs)
+
+**Demo Credentials:**
+- **Email:** `admin@route53.local`
+- **Password:** `Admin1234!`
+
 ## 🚀 Quick Start
 ```bash
 docker-compose up
