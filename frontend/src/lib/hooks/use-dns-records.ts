@@ -63,8 +63,21 @@ export const useBulkDeleteRecords = (zoneId: string) => {
       queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
       toast.success("Records deleted");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error);
+    },
+  });
+};
+
+export const useImportZoneFile = (zoneId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => dnsRecordsApi.importZoneFile(zoneId, file),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["dnsRecords", zoneId] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to import zone file");
     },
   });
 };

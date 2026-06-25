@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import math
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, UploadFile, File
+from fastapi.responses import PlainTextResponse
 
 from app.dependencies import CurrentUserDep, DbDep
 from app.schemas.dns_record import (
@@ -12,9 +13,11 @@ from app.schemas.dns_record import (
     DnsRecordUpdate,
     DnsRecordBulkDelete,
     validate_record_value,
+    ImportResponse,
 )
 from app.models.dns_record import RecordType
 from app.services.zone_service import ZoneService
+from app.services.zone_file_service import ZoneFileService
 from app.utils.pagination import PaginationParams, paginate
 
 router = APIRouter(
@@ -118,6 +121,64 @@ def bulk_delete_records(
     zone = _get_zone_or_404(db, zone_id, current_user.id)
     deleted_count = ZoneService.bulk_delete_records(db, zone, payload.record_ids)
     return {"deleted_count": deleted_count}
+
+
+@router.post(
+    "/import",
+    response_model=ImportResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Import DNS records from a BIND zone file",
+)
+def import_zone_file(
+    zone_id: str,
+    db: DbDep,
+    current_user: CurrentUserDep,
+    file: UploadFile = File(...),
+) -> ImportResponse:
+    zone = _get_zone_or_404(db, zone_id, current_user.id)
+    
+    if not file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No file uploaded")
+        
+    try:
+        content = file.file.read().decode("utf-8")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File could not be read as text")
+        
+    imported, skipped, errors = ZoneFileService.parse_and_import_zone_file(db, zone, content)
+    
+    return ImportResponse(
+        imported=imported,
+        skipped=skipped,
+        errors=errors
+    )
+
+
+@router.get(
+    "/export",
+    summary="Export DNS records as JSON or BIND format",
+)
+def export_zone_file(
+    zone_id: str,
+    db: DbDep,
+    current_user: CurrentUserDep,
+    format: str = Query("json", regex="^(json|bind)$", description="Format to export: json or bind"),
+):
+    zone = _get_zone_or_404(db, zone_id, current_user.id)
+    
+    if format == "json":
+        query = ZoneService.list_records(db, zone_id)
+        records = query.all()
+        return [DnsRecordPublic.model_validate(r).model_dump(mode="json") for r in records]
+        
+    # BIND format
+    zone_file_text = ZoneFileService.generate_zone_file(db, zone)
+    filename = f"{zone.name}zone" if not zone.name.endswith(".") else f"{zone.name[:-1]}.zone"
+    
+    return PlainTextResponse(
+        content=zone_file_text,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
 @router.get(

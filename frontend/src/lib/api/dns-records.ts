@@ -1,6 +1,12 @@
 import { api } from "./client";
 import { DNSRecord, RecordListResponse, RecordListParams } from "@/types/api";
 
+export interface ImportResponse {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
 export const dnsRecordsApi = {
   getRecords: (zoneId: string, params?: RecordListParams) => {
     return api.get<RecordListResponse>(`/hosted-zones/${zoneId}/records`, { params });
@@ -16,7 +22,18 @@ export const dnsRecordsApi = {
   },
   bulkDeleteRecords: (zoneId: string, ids: string[]) => {
     // Assuming backend supports bulk delete via a POST or DELETE with body.
-    // Standard REST might use a POST to a /bulk-delete endpoint.
     return api.post<{ deleted: number }>(`/hosted-zones/${zoneId}/records/bulk-delete`, { ids });
+  },
+  importZoneFile: (zoneId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post<ImportResponse>(`/hosted-zones/${zoneId}/records/import`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+  exportZoneFileUrl: (zoneId: string, format: "bind" | "json") => {
+    return `${process.env.NEXT_PUBLIC_API_URL}/api/v1/hosted-zones/${zoneId}/records/export?format=${format}`;
   },
 };

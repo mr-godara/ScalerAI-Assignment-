@@ -193,3 +193,10 @@ class DnsRecordList(BaseModel):
 
 class DnsRecordBulkDelete(BaseModel):
     record_ids: list[str]
+
+
+class ImportResponse(BaseModel):
+    imported: int
+    skipped: int
+    errors: list[str]
+

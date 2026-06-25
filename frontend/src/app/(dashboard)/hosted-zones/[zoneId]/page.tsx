@@ -13,7 +13,15 @@ import { useKeyboardShortcuts } from "@/lib/hooks/use-keyboard-shortcuts";
 import { useZone, useDeleteZone } from "@/lib/hooks/use-hosted-zones";
 import { RecordsTable } from "@/components/dns-records/records-table";
 import { RecordModal } from "@/components/dns-records/record-modal";
+import { ImportModal } from "@/components/dns-records/import-modal";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { dnsRecordsApi } from "@/lib/api/dns-records";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -79,6 +87,7 @@ export default function ZoneDetailPage({
 
   // Modal States
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<DNSRecord | undefined>(undefined);
   
   const [deleteRecordModalOpen, setDeleteRecordModalOpen] = useState(false);
@@ -255,8 +264,25 @@ export default function ZoneDetailPage({
                 <Button className="bg-orange-600 hover:bg-orange-700 text-white" onClick={handleCreateClick}>
                   Create record
                 </Button>
-                <Button variant="outline" disabled>Import zone file</Button>
-                <Button variant="outline" disabled>Export</Button>
+                <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>Import zone file</Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">Export</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "json")} download>
+                        Export as JSON
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href={dnsRecordsApi.exportZoneFileUrl(zoneId, "bind")} download>
+                        Export as BIND zone file
+                      </a>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -367,6 +393,13 @@ export default function ZoneDetailPage({
         initialData={editingRecord}
         onSubmit={handleRecordSubmit}
         isLoading={createRecordMutation.isPending || updateRecordMutation.isPending}
+      />
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        zoneId={zoneId}
       />
 
       {/* Delete Record Modal */}
