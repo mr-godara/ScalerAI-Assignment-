@@ -17,7 +17,7 @@ const navSections = [
   {
     title: "DNS MANAGEMENT",
     items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Dashboard", href: "/", icon: LayoutDashboard },
       { name: "Hosted zones", href: "/hosted-zones", icon: Globe },
     ],
   },
@@ -70,8 +70,9 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               </h2>
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = pathname.startsWith(item.href) || 
-                                   (item.href === "/dashboard" && pathname === "/");
+                  const isActive = item.href === "/" 
+                    ? pathname === "/" 
+                    : pathname.startsWith(item.href);
                   return (
                     <li key={item.name}>
                       <Link
