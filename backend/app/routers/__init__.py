@@ -1,0 +1,6 @@
+"""Routers package."""
+from app.routers.auth import router as auth_router
+from app.routers.hosted_zones import router as hosted_zones_router
+from app.routers.dns_records import router as dns_records_router
+
+__all__ = ["auth_router", "hosted_zones_router", "dns_records_router"]
